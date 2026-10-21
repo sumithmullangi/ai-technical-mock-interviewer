@@ -11,3 +11,19 @@ export interface InterviewConfig {
   primaryLanguage: 'Python' | 'Java' | 'SQL';
   questionCount: number;
 }
+
+export interface ConfiguredSession {
+  status: string;
+  session_id?: string;
+  sessionId?: string;
+  config: InterviewConfig;
+  message: string;
+  created_at?: string;
+  createdAt?: string;
+}
+
+export interface SubmissionState {
+  status: 'idle' | 'submitting' | 'success' | 'error';
+  errorMessage?: string;
+  sessionData?: ConfiguredSession;
+}

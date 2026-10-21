@@ -106,7 +106,9 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 The API will be available at:
 - **Health Check**: [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health)
+- **Configuration Endpoint**: `POST /api/v1/interviews/config`
 - **Interactive OpenAPI Docs**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
 
 ---
 
@@ -137,21 +139,23 @@ The frontend automatically proxies `/api` requests to `http://127.0.0.1:8000`.
 
 ## Milestone Roadmap
 
-- [x] **Milestone 1: Scaffold & Baseline (Current)**
+- [x] **Milestone 1: Scaffold & Baseline**
   - Greenfield project initialization with Git and safety rules
   - FastAPI backend structure with `GET /api/health` and CORS
   - React 19 + TypeScript + Tailwind CSS developer-tool landing page
   - Configurable interview preview modal (3–10 questions, default 5)
   - Unit tests for backend health check and CORS headers
-- [ ] **Milestone 2: State Machine & Gemini Integration**
-  - Backend-authoritative interview engine
+- [x] **Milestone 2: Interview Configuration & Validation (Current)**
+  - Fully functional Configuration Modal wired to real application state
+  - Pydantic v2 validation for role, seniority, coding language, and bounded question count (3–10)
+  - `POST /api/v1/interviews/config` endpoint with structured ephemeral session generation
+  - Client-side validation, loading spinner, success confirmation card, and error handling
+  - Automated tests covering valid configurations, boundary counts, and invalid inputs
+- [ ] **Milestone 3: State Machine & Gemini Integration**
+  - Backend-authoritative interview lifecycle (3–10 questions, max 2 follow-ups)
   - Gemini API structured outputs validated by Pydantic
-  - Dynamic follow-ups (max 2 per primary question)
-- [ ] **Milestone 3: Multi-Modal Candidate Input**
-  - Text answer submission
-  - Speech transcription with manual review before submit
-  - Code editor for Python, Java, SQL (non-execution static review)
+  - Multi-modal answer submission (text, speech transcripts, non-execution code review)
 - [ ] **Milestone 4: Persistence, Scoring & Auth**
   - PostgreSQL database with SQLAlchemy 2.x and Alembic
   - Guest mode and optional accounts
-  - Detailed 4-dimensional score breakdown
+  - Detailed 4-dimensional score breakdown (0–10 scale)
