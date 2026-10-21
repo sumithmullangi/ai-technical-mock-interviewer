@@ -106,9 +106,23 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 The API will be available at:
 - **Health Check**: [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health)
+- **Database Connectivity Check**: [http://127.0.0.1:8000/api/health/db](http://127.0.0.1:8000/api/health/db)
 - **Configuration Endpoint**: `POST /api/v1/interviews/config`
 - **Interactive OpenAPI Docs**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
+### Database Configuration (Local PostgreSQL)
+
+To connect your local PostgreSQL database:
+1. Copy `backend/.env.example` to `backend/.env` (already `.gitignore`d).
+2. Set your `DATABASE_URL`:
+   ```bash
+   DATABASE_URL="postgresql+asyncpg://postgres:<YOUR_PASSWORD>@localhost:5432/mock_interviewer"
+   ```
+3. Run migrations:
+   ```powershell
+   cd backend
+   alembic upgrade head
+   ```
 
 ---
 
@@ -145,17 +159,23 @@ The frontend automatically proxies `/api` requests to `http://127.0.0.1:8000`.
   - React 19 + TypeScript + Tailwind CSS developer-tool landing page
   - Configurable interview preview modal (3–10 questions, default 5)
   - Unit tests for backend health check and CORS headers
-- [x] **Milestone 2: Interview Configuration & Validation (Current)**
+- [x] **Milestone 2: Interview Configuration & Validation**
   - Fully functional Configuration Modal wired to real application state
   - Pydantic v2 validation for role, seniority, coding language, and bounded question count (3–10)
   - `POST /api/v1/interviews/config` endpoint with structured ephemeral session generation
   - Client-side validation, loading spinner, success confirmation card, and error handling
   - Automated tests covering valid configurations, boundary counts, and invalid inputs
-- [ ] **Milestone 3: State Machine & Gemini Integration**
+- [x] **Milestone 3: PostgreSQL Database & Async Migrations (Current)**
+  - Async SQLAlchemy 2.x setup (`app/db/session.py`, `app/db/base.py`)
+  - Initial `interview_sessions` ORM model (`app/models/interview.py`)
+  - Alembic asynchronous migration engine (`alembic.ini`, `alembic/env.py`, initial revision `001_interview_sessions`)
+  - Safe connectivity endpoint `GET /api/health/db` without credential exposure
+  - Secure `.env` credential management with strict `.gitignore` isolation
+- [ ] **Milestone 4: State Machine & Gemini Integration**
   - Backend-authoritative interview lifecycle (3–10 questions, max 2 follow-ups)
   - Gemini API structured outputs validated by Pydantic
   - Multi-modal answer submission (text, speech transcripts, non-execution code review)
-- [ ] **Milestone 4: Persistence, Scoring & Auth**
-  - PostgreSQL database with SQLAlchemy 2.x and Alembic
+- [ ] **Milestone 5: Evaluation & Auth**
   - Guest mode and optional accounts
   - Detailed 4-dimensional score breakdown (0–10 scale)
+
