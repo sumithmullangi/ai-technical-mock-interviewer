@@ -15,14 +15,10 @@ export default function App() {
   const checkHealth = useCallback(async () => {
     setHealth({ status: 'loading' });
     try {
-      let res: Response | null = null;
-      try {
-        res = await fetch('/api/health');
-      } catch {
-        res = await fetch('http://127.0.0.1:8000/api/health');
-      }
+      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+      const res = await fetch(`${apiBase}/api/health`);
 
-      if (res && res.ok) {
+      if (res.ok) {
         const data = await res.json();
         setHealth({
           status: 'ok',
@@ -30,12 +26,17 @@ export default function App() {
           version: data.version || '0.1.0',
         });
       } else {
-        setHealth({ status: 'error', error: `Status ${res?.status || 'unreachable'}` });
+        setHealth({ status: 'error', error: `Status ${res.status}` });
       }
     } catch (err: unknown) {
       setHealth({
         status: 'error',
-        error: err instanceof Error ? err.message : 'Connection failed',
+        error:
+          err instanceof TypeError && err.message === 'Failed to fetch'
+            ? 'API Offline (Failed to fetch)'
+            : err instanceof Error
+            ? err.message
+            : 'Connection failed',
       });
     }
   }, []);

@@ -43,9 +43,17 @@ class InterviewConfigCreate(BaseModel):
     @classmethod
     def handle_aliases(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            # Normalize camelCase to snake_case if snake_case not explicitly given
-            if "primaryLanguage" in data and "primary_language" not in data:
+            # Support seniority alias for difficulty
+            if "seniority" in data and "difficulty" not in data:
+                data["difficulty"] = data["seniority"]
+            # Support coding_language / codingLanguage / primaryLanguage aliases for primary_language
+            if "coding_language" in data and "primary_language" not in data:
+                data["primary_language"] = data["coding_language"]
+            elif "codingLanguage" in data and "primary_language" not in data:
+                data["primary_language"] = data["codingLanguage"]
+            elif "primaryLanguage" in data and "primary_language" not in data:
                 data["primary_language"] = data["primaryLanguage"]
+            # Support questionCount alias for question_count
             if "questionCount" in data and "question_count" not in data:
                 data["question_count"] = data["questionCount"]
         return data

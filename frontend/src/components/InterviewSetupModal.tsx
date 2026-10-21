@@ -64,8 +64,6 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
     setSubmission({ status: 'submitting' });
 
     try {
-      // Attempt via Vite proxy first, fallback to direct port 8000
-      let response: Response;
       const payload = {
         role: config.role.trim(),
         difficulty: config.difficulty,
@@ -73,19 +71,14 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
         questionCount: config.questionCount,
       };
 
-      try {
-        response = await fetch('/api/v1/interviews/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } catch {
-        response = await fetch('http://127.0.0.1:8000/api/v1/interviews/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
+      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+      const endpoint = `${apiBase}/api/v1/interviews/config`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -121,7 +114,12 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
     } catch (err: unknown) {
       setSubmission({
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : 'Unable to connect to FastAPI backend server.',
+        errorMessage:
+          err instanceof TypeError && err.message === 'Failed to fetch'
+            ? 'Unable to connect to the backend server. Please verify that both the FastAPI backend (uvicorn) and Vite development server are running.'
+            : err instanceof Error
+            ? err.message
+            : 'Unable to connect to FastAPI backend server.',
       });
     }
   };

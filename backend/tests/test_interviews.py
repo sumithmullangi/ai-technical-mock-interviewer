@@ -111,3 +111,21 @@ def test_configure_interview_alias_endpoint():
     response = client.post("/api/interviews/config", json=payload)
     assert response.status_code == 200
     assert response.json()["status"] == "configured"
+
+
+def test_configure_interview_user_aliases():
+    payload = {
+        "role": "Systems Infrastructure & Reliability",
+        "seniority": "Junior",
+        "coding_language": "Python",
+        "question_count": 8,
+    }
+    response = client.post("/api/v1/interviews/config", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "configured"
+    assert data["config"]["role"] == "Systems Infrastructure & Reliability"
+    assert data["config"]["difficulty"] == "Junior"
+    assert data["config"]["primary_language"] == "Python"
+    assert data["config"]["question_count"] == 8
+
