@@ -1,6 +1,10 @@
+from pathlib import Path
 from typing import List, Optional, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+ROOT_DIR = BACKEND_DIR.parent
 
 
 class Settings(BaseSettings):
@@ -17,6 +21,18 @@ class Settings(BaseSettings):
 
     # Database Configuration (PostgreSQL + asyncpg)
     DATABASE_URL: Optional[str] = None
+
+    # Gemini AI Configuration
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
+    @field_validator("GEMINI_API_KEY", mode="before")
+    @classmethod
+    def assemble_gemini_api_key(cls, v: Optional[str]) -> Optional[str]:
+        if isinstance(v, str):
+            cleaned = v.strip().strip('"').strip("'")
+            return cleaned if cleaned else None
+        return v
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -40,7 +56,11 @@ class Settings(BaseSettings):
         return v
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(
+            str(BACKEND_DIR / ".env"),
+            str(ROOT_DIR / ".env"),
+            ".env",
+        ),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",

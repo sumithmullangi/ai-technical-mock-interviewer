@@ -1,5 +1,28 @@
+from unittest.mock import AsyncMock, MagicMock
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.session import get_db
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def mock_db_session():
+    """Mock database session for fast, isolated unit tests without requiring a live PostgreSQL instance."""
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.add = MagicMock()
+    mock_session.commit = AsyncMock()
+    mock_session.rollback = AsyncMock()
+    mock_session.refresh = AsyncMock()
+
+    async def override_get_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield mock_session
+    app.dependency_overrides.pop(get_db, None)
+
 
 client = TestClient(app)
 

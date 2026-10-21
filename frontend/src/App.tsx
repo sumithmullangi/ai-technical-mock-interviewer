@@ -3,14 +3,16 @@ import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { FeatureGrid } from './components/FeatureGrid';
 import { InterviewSetupModal } from './components/InterviewSetupModal';
+import { ActiveInterviewView } from './components/ActiveInterviewView';
 import { Footer } from './components/Footer';
-import type { HealthStatus, ConfiguredSession } from './types';
+import type { HealthStatus, ConfiguredSession, StartedSessionData } from './types';
 import { Clock, Terminal, GitBranch, RefreshCw, Sparkles, Check } from 'lucide-react';
 
 export default function App() {
   const [health, setHealth] = useState<HealthStatus>({ status: 'loading' });
   const [isSetupOpen, setIsSetupOpen] = useState(false);
   const [activeSession, setActiveSession] = useState<ConfiguredSession | null>(null);
+  const [startedSession, setStartedSession] = useState<StartedSessionData | null>(null);
 
   const checkHealth = useCallback(async () => {
     setHealth({ status: 'loading' });
@@ -43,6 +45,39 @@ export default function App() {
 
   useEffect(() => {
     checkHealth();
+
+    const params = new URLSearchParams(window.location.search);
+    const resumeId = params.get('sessionId') || params.get('session_id');
+    if (!resumeId) return;
+
+    const loadSession = async () => {
+      try {
+        const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+        const res = await fetch(`${apiBase}/api/v1/interviews/${resumeId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const sid = data.sessionId || data.session_id;
+          const status = data.status;
+          setStartedSession({
+            status: status,
+            session_id: sid,
+            current_question: {
+              question_number: 1,
+              topic: 'Technical Interview',
+              difficulty: data.config.difficulty,
+              question_text: 'Technical interview session.',
+              expected_concepts: [],
+            },
+            message: data.message || 'Session loaded.',
+            started_at: data.createdAt || data.created_at || new Date().toISOString(),
+            config: data.config,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load session from URL query parameter:', err);
+      }
+    };
+    loadSession();
   }, [checkHealth]);
 
   const scrollToFeatures = () => {
@@ -59,8 +94,18 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1">
-        {/* Active Configuration Ribbon */}
-        {activeSession && (
+        {startedSession ? (
+          <ActiveInterviewView
+            session={startedSession}
+            onEndSession={() => {
+              setStartedSession(null);
+              window.history.replaceState({}, '', window.location.pathname);
+            }}
+          />
+        ) : (
+          <>
+            {/* Active Configuration Ribbon */}
+            {activeSession && (
           <div className="bg-indigo-950/70 border-b border-indigo-500/30 px-4 py-2 text-xs">
             <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -217,6 +262,8 @@ export default function App() {
             </div>
           </div>
         </section>
+          </>
+        )}
       </main>
 
       {/* Footer */}
@@ -228,6 +275,9 @@ export default function App() {
         onClose={() => setIsSetupOpen(false)}
         onConfigSaved={(data) => {
           if (data) setActiveSession(data);
+        }}
+        onSessionStarted={(startedData) => {
+          setStartedSession(startedData);
         }}
       />
     </div>
