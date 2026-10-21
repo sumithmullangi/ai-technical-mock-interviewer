@@ -38,8 +38,10 @@ from app.schemas.interview import (
     SessionStatus,
     calculate_weighted_overall_score,
 )
+from app.core.config import settings
 from app.services.gemini_service import (
     GeminiProviderError,
+    GeminiQuotaExceededError,
     GeminiServiceError,
     GeminiValidationError,
     evaluate_candidate_answer,
@@ -194,6 +196,14 @@ async def start_interview_session(
             primary_language=CodingLanguage(session_record.primary_language),
             question_number=1,
         )
+    except GeminiQuotaExceededError as exc:
+        await db.rollback()
+        headers = {"Retry-After": str(int(exc.retry_after or 5))}
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"AI rate limit exceeded during session start: {str(exc)}",
+            headers=headers,
+        ) from exc
     except GeminiServiceError as exc:
         await db.rollback()
         raise HTTPException(
@@ -410,6 +420,13 @@ async def evaluate_persisted_answer(
             expected_concepts=concepts,
             answer_text=answer_record.answer_text,
         )
+    except GeminiQuotaExceededError as exc:
+        headers = {"Retry-After": str(int(exc.retry_after or 5))}
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"AI evaluation rate limit exceeded. Please wait a few seconds before retrying: {str(exc)}",
+            headers=headers,
+        ) from exc
     except GeminiProviderError as exc:
         err_msg = str(exc)
         if "Gemini API key is not configured" in err_msg:
@@ -630,6 +647,13 @@ async def request_follow_up_question(
             evaluation_feedback=eval_feedback,
             missing_concepts=missing_concepts,
         )
+    except GeminiQuotaExceededError as exc:
+        headers = {"Retry-After": str(int(exc.retry_after or 5))}
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"AI follow-up rate limit exceeded. Please wait a few seconds before retrying: {str(exc)}",
+            headers=headers,
+        ) from exc
     except GeminiProviderError as exc:
         err_msg = str(exc)
         if "Gemini API key is not configured" in err_msg:
@@ -943,8 +967,15 @@ async def advance_interview_question(
             primary_language=CodingLanguage(session_record.primary_language),
             question_number=next_q_num,
             previous_topics=previous_topics,
-            allow_offline=False,
+            allow_offline=(settings.GEMINI_API_KEY is None or not settings.GEMINI_API_KEY.strip()),
         )
+    except GeminiQuotaExceededError as exc:
+        headers = {"Retry-After": str(int(exc.retry_after or 5))}
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"AI rate limit exceeded during question progression: {str(exc)}",
+            headers=headers,
+        ) from exc
     except GeminiProviderError as exc:
         err_msg = str(exc)
         if "Gemini API key is not configured" in err_msg:

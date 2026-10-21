@@ -1,14 +1,78 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 1. Locally Bundled Variable Font Declarations */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Variable.woff2') format('woff2-variations'),
+       url('/fonts/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2-variations'),
+       url('/fonts/GeistMono-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 2. Tailwind CSS v4 Theme Font Mappings */
+@theme {
+  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* 3. Base Typographic Hierarchy & Settings */
 @layer base {
   :root {
-    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #0b0f17;
-    color: #e2e8f0;
+    background-color: #f8fafc;
+    color: #0f172a;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    line-height: 1.6;
+    transition: background-color 0.15s ease, color 0.15s ease;
   }
+
+  html.dark body {
+    background-color: #020617;
+    color: #f8fafc;
+  }
+
+  /* Headings with deliberate line-height and proportional tracking */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    text-wrap: balance;
+  }
+
+  /* Monospaced code blocks and inline identifiers */
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
+    font-feature-settings: 'calt' 1, 'liga' 1;
+  }
+}
+
+/* 4. Tabular Numerals Utility for Metrics and Scores */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }

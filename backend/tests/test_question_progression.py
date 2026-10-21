@@ -21,6 +21,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.main import app
 from app.models.interview import (
@@ -35,7 +36,10 @@ from app.schemas.interview import (
     SeniorityLevel,
     SessionStatus,
 )
-from app.services.gemini_service import GeminiProviderError
+from app.services.gemini_service import (
+    GeminiProviderError,
+    GeminiQuotaExceededError,
+)
 
 client = TestClient(app)
 
@@ -678,5 +682,89 @@ def test_advance_alias_endpoint(monkeypatch):
         res = client.post("/api/v1/interviews/mock-prog-100/advance")
         assert res.status_code == 200
         assert res.json()["question_number"] == 2
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_advance_offline_progression_when_api_key_unset(monkeypatch):
+    """Verify advancement succeeds with offline question catalog when GEMINI_API_KEY is empty/unset."""
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "")
+
+    session = _build_test_session()
+    pq1 = _build_primary_question(question_number=1)
+    ans1 = _build_primary_answer(question_number=1)
+
+    mock_db = AsyncMock(spec=AsyncSession)
+    mock_db.add = MagicMock()
+    mock_db.commit = AsyncMock()
+    mock_db.refresh = AsyncMock()
+
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = session
+
+    res_pqs = MagicMock()
+    res_pqs.scalars.return_value.all.return_value = [pq1]
+
+    res_ans = MagicMock()
+    res_ans.scalars.return_value.first.return_value = ans1
+
+    res_fus = MagicMock()
+    res_fus.scalars.return_value.all.return_value = []
+
+    mock_db.execute.side_effect = [res_session, res_pqs, res_ans, res_fus]
+
+    async def override_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        res = client.post("/api/v1/interviews/mock-prog-100/next")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["question_number"] == 2
+        assert "High-Throughput Stream Ingestion" in data["current_question"]["topic"]
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_advance_gemini_quota_exceeded_returns_429(monkeypatch):
+    """Verify HTTP 429 and Retry-After header are returned when Gemini API quota is exhausted during question generation."""
+    session = _build_test_session()
+    pq1 = _build_primary_question(question_number=1)
+    ans1 = _build_primary_answer(question_number=1)
+
+    mock_db = AsyncMock(spec=AsyncSession)
+    mock_db.rollback = AsyncMock()
+
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = session
+
+    res_pqs = MagicMock()
+    res_pqs.scalars.return_value.all.return_value = [pq1]
+
+    res_ans = MagicMock()
+    res_ans.scalars.return_value.first.return_value = ans1
+
+    res_fus = MagicMock()
+    res_fus.scalars.return_value.all.return_value = []
+
+    mock_db.execute.side_effect = [res_session, res_pqs, res_ans, res_fus]
+
+    import app.api.v1.endpoints.interviews as interview_endpoint
+    monkeypatch.setattr(
+        interview_endpoint,
+        "generate_interview_question",
+        AsyncMock(side_effect=GeminiQuotaExceededError("Gemini rate limit exceeded", retry_after=25.0)),
+    )
+
+    async def override_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        res = client.post("/api/v1/interviews/mock-prog-100/next")
+        assert res.status_code == 429
+        assert res.headers.get("retry-after") == "25"
+        assert "Gemini rate limit exceeded" in res.json()["detail"]
     finally:
         app.dependency_overrides.pop(get_db, None)

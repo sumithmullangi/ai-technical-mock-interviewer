@@ -1096,7 +1096,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               <span>Live Session • In Progress</span>
             </div>
 
-            <div className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs font-semibold text-white">
+            <div className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs font-semibold text-white font-mono tabular-nums">
               Question {qNum} of {totalQuestions}
             </div>
           </div>

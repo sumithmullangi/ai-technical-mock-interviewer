@@ -1,6 +1,7 @@
 import json
 import pytest
 import httpx
+from unittest.mock import AsyncMock
 
 from app.core.config import settings
 from app.schemas.interview import (
@@ -10,6 +11,7 @@ from app.schemas.interview import (
 )
 from app.services.gemini_service import (
     GeminiProviderError,
+    GeminiQuotaExceededError,
     GeminiValidationError,
     generate_interview_question,
     generate_offline_mock_question,
@@ -260,3 +262,119 @@ async def test_generate_interview_question_network_error(monkeypatch):
         )
 
     assert "Network connectivity error" in str(exc_info.value)
+
+
+@pytest.mark.anyio
+async def test_generate_interview_question_429_exhausted_raises_quota_error(monkeypatch):
+    """When Gemini returns 429 across retries, raise GeminiQuotaExceededError with retry_after."""
+    import asyncio
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
+    monkeypatch.setattr(asyncio, "sleep", AsyncMock())
+
+    async def mock_post(url, headers=None, json=None):
+        return httpx.Response(
+            429,
+            headers={"Retry-After": "8"},
+            content=b'{"error": {"code": 429, "message": "Resource exhausted"}}',
+            request=httpx.Request("POST", url),
+        )
+
+    mock_client = httpx.AsyncClient()
+    monkeypatch.setattr(mock_client, "post", mock_post)
+
+    with pytest.raises(GeminiQuotaExceededError) as exc_info:
+        await generate_interview_question(
+            role="Backend Engineer",
+            difficulty=SeniorityLevel.SENIOR,
+            primary_language=CodingLanguage.PYTHON,
+            question_number=1,
+            client=mock_client,
+        )
+
+    assert exc_info.value.retry_after == 8.0
+    assert "rate limit exceeded" in str(exc_info.value).lower()
+    assert "429" in str(exc_info.value)
+
+
+@pytest.mark.anyio
+async def test_generate_interview_question_429_transient_retry_success(monkeypatch):
+    """When Gemini returns 429 once and then succeeds on retry, return the question."""
+    import asyncio
+    from unittest.mock import AsyncMock
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
+    monkeypatch.setattr(asyncio, "sleep", AsyncMock())
+
+    valid_payload = {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {
+                            "text": json.dumps(
+                                {
+                                    "question_number": 1,
+                                    "topic": "Retry Recovery",
+                                    "difficulty": "Senior",
+                                    "question_text": "Implement resilient circuit breaker.",
+                                    "starter_code": "class CircuitBreaker: pass",
+                                    "expected_concepts": ["Failure threshold", "Half-open state"],
+                                }
+                            )
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+
+    call_count = 0
+
+    async def mock_post(url, headers=None, json=None):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return httpx.Response(
+                429,
+                headers={"Retry-After": "1"},
+                content=b'{"error": {"code": 429, "message": "Resource exhausted"}}',
+                request=httpx.Request("POST", url),
+            )
+        return httpx.Response(200, json=valid_payload, request=httpx.Request("POST", url))
+
+    mock_client = httpx.AsyncClient()
+    monkeypatch.setattr(mock_client, "post", mock_post)
+
+    q = await generate_interview_question(
+        role="Backend Engineer",
+        difficulty=SeniorityLevel.SENIOR,
+        primary_language=CodingLanguage.PYTHON,
+        question_number=1,
+        client=mock_client,
+    )
+
+    assert call_count == 2
+    assert q.topic == "Retry Recovery"
+    assert q.question_number == 1
+
+
+def test_offline_mock_question_multi_question_catalog():
+    """Verify offline mock questions rotate topics across question numbers for all languages."""
+    for lang in [CodingLanguage.PYTHON, CodingLanguage.JAVA, CodingLanguage.SQL]:
+        q1 = generate_offline_mock_question(role="Engineer", difficulty=SeniorityLevel.MID, primary_language=lang, question_number=1)
+        q2 = generate_offline_mock_question(role="Engineer", difficulty=SeniorityLevel.MID, primary_language=lang, question_number=2)
+        q3 = generate_offline_mock_question(role="Engineer", difficulty=SeniorityLevel.MID, primary_language=lang, question_number=3)
+        q4 = generate_offline_mock_question(role="Engineer", difficulty=SeniorityLevel.MID, primary_language=lang, question_number=4)
+
+        # Questions should have distinct topics in 1..3
+        assert q1.topic != q2.topic
+        assert q2.topic != q3.topic
+        assert q1.topic != q3.topic
+
+        # Question numbers preserved
+        assert q1.question_number == 1
+        assert q2.question_number == 2
+        assert q3.question_number == 3
+        assert q4.question_number == 4
+
+        # Wrap around catalog preserves topic pattern
+        assert q4.topic == q1.topic

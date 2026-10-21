@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
@@ -30,6 +31,13 @@ class GeminiServiceError(Exception):
 class GeminiProviderError(GeminiServiceError):
     """Raised when the Google Gemini API returns an HTTP or connectivity error."""
     pass
+
+
+class GeminiQuotaExceededError(GeminiProviderError):
+    """Raised when the Google Gemini API returns an HTTP 429 rate limit or quota exhaustion."""
+    def __init__(self, message: str, retry_after: Optional[float] = None):
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class GeminiValidationError(GeminiServiceError):
@@ -137,88 +145,285 @@ def generate_offline_mock_question(
     """Generates a deterministic offline mock question when no GEMINI_API_KEY is configured.
 
     Ensures safe, charge-free local development and robust unit testing.
+    Provides a catalog of distinct questions per language to support multi-question progression.
     """
     diff_val = difficulty if isinstance(difficulty, SeniorityLevel) else SeniorityLevel(difficulty)
     lang_val = primary_language if isinstance(primary_language, CodingLanguage) else CodingLanguage(primary_language)
 
     if lang_val == CodingLanguage.SQL:
-        topic = "Analytical Window Functions & Partitioning"
-        starter_code = (
-            "-- Calculate 7-day rolling revenue per merchant\n"
-            "SELECT\n"
-            "    merchant_id,\n"
-            "    transaction_date,\n"
-            "    amount,\n"
-            "    -- Implement window aggregation\n"
-            "FROM transactions\n"
-            "WHERE transaction_date >= CURRENT_DATE - INTERVAL '30 days';"
-        )
-        question_text = (
-            f"You are interviewing for {role} ({diff_val.value}). "
-            "Given an event ledger with 500 million transaction records, write a SQL query to calculate "
-            "the 7-day rolling average transaction volume per merchant. How would you index or partition "
-            "the PostgreSQL table to achieve sub-second execution on live production dashboards?"
-        )
-        expected_concepts = [
-            "Window Functions (AVG OVER)",
-            "Range vs Rows frame specification",
-            "Composite Indexing on (merchant_id, transaction_date)",
-            "Declarative Range Partitioning",
+        catalog = [
+            {
+                "topic": "Analytical Window Functions & Partitioning",
+                "starter_code": (
+                    "-- Calculate 7-day rolling revenue per merchant\n"
+                    "SELECT\n"
+                    "    merchant_id,\n"
+                    "    transaction_date,\n"
+                    "    amount,\n"
+                    "    -- Implement window aggregation\n"
+                    "FROM transactions\n"
+                    "WHERE transaction_date >= CURRENT_DATE - INTERVAL '30 days';"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "Given an event ledger with 500 million transaction records, write a SQL query to calculate "
+                    "the 7-day rolling average transaction volume per merchant. How would you index or partition "
+                    "the PostgreSQL table to achieve sub-second execution on live production dashboards?"
+                ),
+                "expected_concepts": [
+                    "Window Functions (AVG OVER)",
+                    "Range vs Rows frame specification",
+                    "Composite Indexing on (merchant_id, transaction_date)",
+                    "Declarative Range Partitioning",
+                ],
+            },
+            {
+                "topic": "Analytical Window Functions & Hierarchical Partitioning",
+                "starter_code": (
+                    "-- Calculate subordinate headcounts across management hierarchy\n"
+                    "WITH RECURSIVE org_tree AS (\n"
+                    "    SELECT employee_id, manager_id, 1 AS depth\n"
+                    "    FROM employees\n"
+                    "    WHERE manager_id IS NULL\n"
+                    "    UNION ALL\n"
+                    "    SELECT e.employee_id, e.manager_id, ot.depth + 1\n"
+                    "    FROM employees e\n"
+                    "    JOIN org_tree ot ON e.manager_id = ot.employee_id\n"
+                    ")\n"
+                    "SELECT employee_id, depth, COUNT(*) OVER (PARTITION BY depth) AS count_at_depth\n"
+                    "FROM org_tree;"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "In an enterprise organization database in PostgreSQL, write a query using recursive CTEs "
+                    "and window functions to compute the complete reporting hierarchy and depth headcount. "
+                    "Explain cycle detection strategies and index optimization on hierarchical parent-child foreign keys."
+                ),
+                "expected_concepts": [
+                    "WITH RECURSIVE Common Table Expressions",
+                    "Graph Cycle Detection & Loop Prevention",
+                    "Window Functions OVER Partition",
+                    "Covering Indexes for Tree Traversals",
+                ],
+            },
+            {
+                "topic": "ACID Isolation Levels & Concurrency Deadlock Resolution",
+                "starter_code": (
+                    "-- Atomic inventory allocation with deadlock prevention\n"
+                    "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;\n"
+                    "SELECT item_id, stock_count\n"
+                    "FROM inventory\n"
+                    "WHERE warehouse_id = 12\n"
+                    "ORDER BY item_id\n"
+                    "FOR UPDATE;\n"
+                    "-- Implement allocation and commit\n"
+                    "COMMIT;"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "In a high-contention e-commerce order fulfillment system in PostgreSQL, concurrent transactions suffer "
+                    "from deadlock aborts and serialization failures. Compare Read Committed, Repeatable Read, and Serializable isolation levels. "
+                    "How does deterministic lock ordering and SELECT ... FOR UPDATE eliminate deadlock conditions?"
+                ),
+                "expected_concepts": [
+                    "Deterministic Lock Ordering to Prevent Deadlocks",
+                    "Row-Level Locking (FOR UPDATE vs FOR NO KEY UPDATE)",
+                    "Repeatable Read & Serialization Failures (40001)",
+                    "Safe Client-Side Transaction Retry Logic",
+                ],
+            },
         ]
     elif lang_val == CodingLanguage.JAVA:
-        topic = "Thread Safety & Java Memory Model"
-        starter_code = (
-            "public class DistributedRateLimiter {\n"
-            "    // Implement token bucket rate limiter with atomic state\n"
-            "    public boolean allowRequest(String clientId, int tokensRequested) {\n"
-            "        return false;\n"
-            "    }\n"
-            "}"
-        )
-        question_text = (
-            f"You are interviewing for {role} ({diff_val.value}). "
-            "Explain how the Java Memory Model guarantees visibility and instruction reordering across CPU caches. "
-            "Design a thread-safe token bucket rate limiter in Java. Compare synchronized, volatile, and AtomicLong/AtomicReference "
-            "for handling high-contention throughput."
-        )
-        expected_concepts = [
-            "Happens-Before Relationship",
-            "Compare-And-Swap (CAS)",
-            "Volatile memory barrier",
-            "Lock-free concurrency with AtomicReference",
+        catalog = [
+            {
+                "topic": "Thread Safety & Java Memory Model",
+                "starter_code": (
+                    "public class DistributedRateLimiter {\n"
+                    "    // Implement token bucket rate limiter with atomic state\n"
+                    "    public boolean allowRequest(String clientId, int tokensRequested) {\n"
+                    "        return false;\n"
+                    "    }\n"
+                    "}"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "Explain how the Java Memory Model guarantees visibility and instruction reordering across CPU caches. "
+                    "Design a thread-safe token bucket rate limiter in Java. Compare synchronized, volatile, and AtomicLong/AtomicReference "
+                    "for handling high-contention throughput."
+                ),
+                "expected_concepts": [
+                    "Happens-Before Relationship",
+                    "Compare-And-Swap (CAS)",
+                    "Volatile memory barrier",
+                    "Lock-free concurrency with AtomicReference",
+                ],
+            },
+            {
+                "topic": "High-Throughput Work Stealing & Virtual Threads",
+                "starter_code": (
+                    "public class BatchDispatcher {\n"
+                    "    // Implement high-throughput batch task dispatcher with structured scope\n"
+                    "    public List<TaskResult> dispatchBatch(List<Task> tasks) {\n"
+                    "        return Collections.emptyList();\n"
+                    "    }\n"
+                    "}"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "Compare platform threads vs Java 21 Project Loom virtual threads for I/O-intensive microservice workloads. "
+                    "Explain carrier thread pinning with synchronized blocks, ForkJoinPool work-stealing mechanics, and how "
+                    "StructuredTaskScope prevents thread leakage and orphan tasks."
+                ),
+                "expected_concepts": [
+                    "Virtual Threads vs Platform Operating System Threads",
+                    "Carrier Thread Pinning & ReentrantLock Alternatives",
+                    "ForkJoinPool Work-Stealing Scheduling",
+                    "StructuredTaskScope & Thread Leakage Prevention",
+                ],
+            },
+            {
+                "topic": "Java Memory Model & Zero-Copy Network Buffers",
+                "starter_code": (
+                    "public class DistributedRateLimiter {\n"
+                    "    // Low-latency buffer router and memory-safe atomic state\n"
+                    "    public boolean allowRequest(String clientId, int tokensRequested) {\n"
+                    "        return false;\n"
+                    "    }\n"
+                    "}"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "Design a low-latency packet routing pipeline in Java. Explain DirectByteBuffer vs HeapByteBuffer, off-heap "
+                    "memory management, zero-copy socket transfers (FileChannel.transferTo), and the Java Memory Model rules "
+                    "governing atomic visibility across worker threads."
+                ),
+                "expected_concepts": [
+                    "DirectByteBuffer & Off-Heap Memory Safety",
+                    "Zero-Copy Linux sendfile / transferTo",
+                    "Volatile Memory Barriers & JMM Visibility",
+                    "Memory Fragmentation & Direct Memory OOM Hazards",
+                ],
+            },
         ]
     else:  # Default to Python
-        topic = "Distributed Concurrency & Idempotent Transactions"
-        starter_code = (
-            "class PaymentProcessor:\n"
-            "    def __init__(self, db_session, cache_client):\n"
-            "        self.db = db_session\n"
-            "        self.cache = cache_client\n\n"
-            "    async def process_payment(self, idempotency_key: str, account_id: str, amount_cents: int) -> dict:\n"
-            "        # Implement idempotent payment execution\n"
-            "        pass\n"
-        )
-        question_text = (
-            f"You are interviewing for {role} ({diff_val.value}). "
-            "In a distributed microservices environment, design an idempotent payment processing pipeline in Python. "
-            "How would you ensure that network timeouts or candidate retries cannot produce duplicate account debits? "
-            "Detail your choice of distributed lock, database constraints, and outbox or retry mechanism."
-        )
-        expected_concepts = [
-            "Idempotency Keys with TTL",
-            "Unique Database Constraints",
-            "Distributed Locks (Redis/Redlock) with safe fencing",
-            "Transactional Outbox Pattern",
+        catalog = [
+            {
+                "topic": "Distributed Concurrency & Idempotent Transactions",
+                "starter_code": (
+                    "class PaymentProcessor:\n"
+                    "    def __init__(self, db_session, cache_client):\n"
+                    "        self.db = db_session\n"
+                    "        self.cache = cache_client\n\n"
+                    "    async def process_payment(self, idempotency_key: str, account_id: str, amount_cents: int) -> dict:\n"
+                    "        # Implement idempotent payment execution\n"
+                    "        pass\n"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "In a distributed microservices environment, design an idempotent payment processing pipeline in Python. "
+                    "How would you ensure that network timeouts or candidate retries cannot produce duplicate account debits? "
+                    "Detail your choice of distributed lock, database constraints, and outbox or retry mechanism."
+                ),
+                "expected_concepts": [
+                    "Idempotency Keys with TTL",
+                    "Unique Database Constraints",
+                    "Distributed Locks (Redis/Redlock) with safe fencing",
+                    "Transactional Outbox Pattern",
+                ],
+            },
+            {
+                "topic": "High-Throughput Stream Ingestion & Backpressure",
+                "starter_code": (
+                    "class StreamIngestionWorker:\n"
+                    "    def __init__(self, kafka_consumer, batch_size: int = 500):\n"
+                    "        self.consumer = kafka_consumer\n"
+                    "        self.batch_size = batch_size\n\n"
+                    "    async def consume_stream(self) -> None:\n"
+                    "        # Implement backpressure-aware ingestion and bulk flush\n"
+                    "        pass\n"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "Design a streaming ingestion worker in Python that consumes 50,000 telemetry events per second from Kafka "
+                    "and writes batches into PostgreSQL. How do you implement backpressure when downstream database writes experience "
+                    "latency spikes? Detail your consumer offset commit strategy (at-least-once vs exactly-once)."
+                ),
+                "expected_concepts": [
+                    "Backpressure Flow Control via Asyncio Queues",
+                    "Asyncpg COPY vs Bulk INSERT Batching",
+                    "Manual Offset Commits vs Consumer Group Rebalancing",
+                    "At-Least-Once Delivery with Deduplication",
+                ],
+            },
+            {
+                "topic": "Distributed Cache Invalidation & Stampede Protection",
+                "starter_code": (
+                    "class CacheManager:\n"
+                    "    def __init__(self, redis_client, db_client):\n"
+                    "        self.redis = redis_client\n"
+                    "        self.db = db_client\n\n"
+                    "    async def get_or_compute(self, key: str, ttl_seconds: int = 300) -> bytes:\n"
+                    "        # Implement dogpile / stampede protection with mutex leases\n"
+                    "        pass\n"
+                ),
+                "question_text": (
+                    f"You are interviewing for {role} ({diff_val.value}). "
+                    "In a high-traffic microservices system, frequent cache invalidations trigger cache stampedes (dogpile effect) "
+                    "that overwhelm the primary database. Design a Python cache manager using Redis that implements probabilistic early "
+                    "expiration (XFetch algorithm) or mutex leases. How do you handle cache coherence under network partitions?"
+                ),
+                "expected_concepts": [
+                    "Cache Stampede / Dogpile Effect Prevention",
+                    "Mutex Leases / Probabilistic Early Expiration (XFetch)",
+                    "Cache-Aside vs Write-Through Invalidation",
+                    "Dual-Write Hazards & CDC (Debezium) Consistency",
+                ],
+            },
         ]
 
+    item = catalog[(question_number - 1) % len(catalog)]
     return InterviewQuestionSchema(
         question_number=question_number,
-        topic=topic,
+        topic=item["topic"],
         difficulty=diff_val,
-        question_text=question_text,
-        starter_code=starter_code,
-        expected_concepts=expected_concepts,
+        question_text=item["question_text"],
+        starter_code=item["starter_code"],
+        expected_concepts=item["expected_concepts"],
     )
+
+
+async def _post_with_retry(
+    client: httpx.AsyncClient,
+    endpoint: str,
+    headers: Dict[str, str],
+    json_payload: Dict[str, Any],
+    max_retries: int = 2,
+    base_backoff: float = 1.0,
+) -> httpx.Response:
+    """Performs HTTP POST to Gemini with bounded exponential backoff on HTTP 429 rate limits."""
+    last_response: Optional[httpx.Response] = None
+    for attempt in range(max_retries + 1):
+        response = await client.post(endpoint, headers=headers, json=json_payload)
+        last_response = response
+        if response.status_code == 200:
+            return response
+        if response.status_code == 429 and attempt < max_retries:
+            retry_hdr = response.headers.get("Retry-After")
+            wait_time = base_backoff * (2 ** attempt)
+            if retry_hdr:
+                try:
+                    wait_time = max(wait_time, min(float(retry_hdr), 5.0))
+                except (ValueError, TypeError):
+                    pass
+            logger.warning(
+                f"Gemini API returned HTTP 429 (attempt {attempt + 1}/{max_retries + 1}). "
+                f"Backing off for {wait_time:.1f}s before retry..."
+            )
+            await asyncio.sleep(wait_time)
+            continue
+        break
+    assert last_response is not None
+    return last_response
 
 
 async def generate_interview_question(
@@ -272,12 +477,24 @@ async def generate_interview_question(
         should_close_client = True
 
     try:
-        response = await client.post(endpoint, headers=headers, json=payload)
+        response = await _post_with_retry(client, endpoint, headers, payload)
         if response.status_code != 200:
             # Mask any possible credentials in the response body
             error_preview = response.text[:200]
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+            if response.status_code == 429:
+                retry_hdr = response.headers.get("Retry-After")
+                retry_sec: Optional[float] = None
+                if retry_hdr:
+                    try:
+                        retry_sec = float(retry_hdr)
+                    except (ValueError, TypeError):
+                        pass
+                raise GeminiQuotaExceededError(
+                    f"Gemini API rate limit exceeded (HTTP 429): {error_preview}",
+                    retry_after=retry_sec,
+                )
             raise GeminiProviderError(
                 f"Gemini API error (HTTP {response.status_code}): {error_preview}"
             )
@@ -476,11 +693,23 @@ async def evaluate_candidate_answer(
         should_close_client = True
 
     try:
-        response = await client.post(endpoint, headers=headers, json=payload)
+        response = await _post_with_retry(client, endpoint, headers, payload)
         if response.status_code != 200:
             error_preview = response.text[:200]
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+            if response.status_code == 429:
+                retry_hdr = response.headers.get("Retry-After")
+                retry_sec: Optional[float] = None
+                if retry_hdr:
+                    try:
+                        retry_sec = float(retry_hdr)
+                    except (ValueError, TypeError):
+                        pass
+                raise GeminiQuotaExceededError(
+                    f"Gemini API evaluation rate limit exceeded (HTTP 429): {error_preview}",
+                    retry_after=retry_sec,
+                )
             raise GeminiProviderError(
                 f"Gemini API evaluation error (HTTP {response.status_code}): {error_preview}"
             )
@@ -691,11 +920,23 @@ async def generate_follow_up_question(
         should_close_client = True
 
     try:
-        response = await client.post(endpoint, headers=headers, json=payload)
+        response = await _post_with_retry(client, endpoint, headers, payload)
         if response.status_code != 200:
             error_preview = response.text[:200]
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+            if response.status_code == 429:
+                retry_hdr = response.headers.get("Retry-After")
+                retry_sec: Optional[float] = None
+                if retry_hdr:
+                    try:
+                        retry_sec = float(retry_hdr)
+                    except (ValueError, TypeError):
+                        pass
+                raise GeminiQuotaExceededError(
+                    f"Gemini API follow-up generation rate limit exceeded (HTTP 429): {error_preview}",
+                    retry_after=retry_sec,
+                )
             raise GeminiProviderError(
                 f"Gemini API follow-up generation error (HTTP {response.status_code}): {error_preview}"
             )
@@ -935,7 +1176,7 @@ async def generate_report_narrative(
         should_close_client = True
 
     try:
-        response = await client.post(endpoint, headers=headers, json=payload)
+        response = await _post_with_retry(client, endpoint, headers, payload)
         if response.status_code != 200:
             error_preview = response.text[:200]
             if settings.GEMINI_API_KEY in error_preview:
@@ -957,6 +1198,18 @@ async def generate_report_narrative(
                     aggregated_strengths=aggregated_strengths,
                     aggregated_missing_concepts=aggregated_missing_concepts,
                     aggregated_suggestions=aggregated_suggestions,
+                )
+            if response.status_code == 429:
+                retry_hdr = response.headers.get("Retry-After")
+                retry_sec: Optional[float] = None
+                if retry_hdr:
+                    try:
+                        retry_sec = float(retry_hdr)
+                    except (ValueError, TypeError):
+                        pass
+                raise GeminiQuotaExceededError(
+                    f"Gemini API report narrative rate limit exceeded (HTTP 429): {error_preview}",
+                    retry_after=retry_sec,
                 )
             raise GeminiProviderError(f"Gemini API report narrative error (HTTP {response.status_code}): {error_preview}")
 

@@ -18,6 +18,7 @@ from app.schemas.interview import (
 )
 from app.services.gemini_service import (
     GeminiProviderError,
+    GeminiQuotaExceededError,
     GeminiValidationError,
 )
 
@@ -457,6 +458,51 @@ def test_evaluate_answer_gemini_network_failure_502():
             res = client.post("/api/v1/interviews/mock-eval-neterr/answers/ans-eval-neterr/evaluate")
             assert res.status_code == 502
             assert "AI evaluation service provider error" in res.json()["detail"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_evaluate_answer_gemini_quota_exceeded_returns_429():
+    """Verify HTTP 429 and Retry-After header are returned when Gemini API quota is exhausted."""
+    active_session = InterviewSessionModel(
+        id="mock-eval-quota",
+        role="Backend Engineer",
+        difficulty="Senior",
+        primary_language="Python",
+        question_count=5,
+        status="in_progress",
+        created_at=datetime.now(timezone.utc),
+    )
+    candidate_answer = CandidateAnswerModel(
+        id="ans-eval-quota",
+        session_id="mock-eval-quota",
+        question_number=1,
+        answer_text="def test(): pass",
+        submitted_at=datetime.now(timezone.utc),
+    )
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    session_res = MagicMock()
+    session_res.scalar_one_or_none.return_value = active_session
+    answer_res = MagicMock()
+    answer_res.scalar_one_or_none.return_value = candidate_answer
+    eval_res = MagicMock()
+    eval_res.scalar_one_or_none.return_value = None
+    mock_session.execute = AsyncMock(side_effect=[session_res, answer_res, eval_res])
+
+    async def override_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        with patch(
+            "app.api.v1.endpoints.interviews.evaluate_candidate_answer",
+            side_effect=GeminiQuotaExceededError("Gemini API rate limit exceeded (HTTP 429)", retry_after=15.0),
+        ):
+            res = client.post("/api/v1/interviews/mock-eval-quota/answers/ans-eval-quota/evaluate")
+            assert res.status_code == 429
+            assert res.headers.get("retry-after") == "15"
+            assert "Gemini API rate limit exceeded" in res.json()["detail"]
     finally:
         app.dependency_overrides.clear()
 

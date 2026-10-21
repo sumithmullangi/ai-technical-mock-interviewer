@@ -420,7 +420,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
               <label htmlFor="question-range" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                 Question Count (Configurable 3–10)
               </label>
-              <span className="text-xs font-bold text-indigo-400">
+              <span className="text-xs font-bold text-indigo-400 font-mono tabular-nums">
                 {config.questionCount} Questions {config.questionCount === 5 ? '(SRS Default)' : ''}
               </span>
             </div>
@@ -438,7 +438,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
               }}
               className="mt-2 w-full accent-indigo-500 cursor-pointer disabled:opacity-50"
             />
-            <div className="mt-1 flex justify-between text-[11px] text-slate-500">
+            <div className="mt-1 flex justify-between text-[11px] text-slate-500 font-mono tabular-nums">
               <span>Min: 3</span>
               <span>SRS Default: 5</span>
               <span>Max: 10</span>
