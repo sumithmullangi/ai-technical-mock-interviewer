@@ -40,6 +40,13 @@ from app.schemas.interview import (
     SessionStatus,
     calculate_weighted_overall_score,
 )
+from app.schemas.voice import VoiceSessionRequest, VoiceSessionResponse
+from app.services.voice_service import (
+    VoiceServiceError,
+    VoiceServiceNotConfiguredError,
+    VoiceServiceProviderError,
+    request_realtime_session,
+)
 import logging
 from app.core.config import settings
 from app.services.gemini_service import (
@@ -1569,3 +1576,104 @@ async def get_or_generate_interview_report(
         created_at=report_record.created_at,
         updated_at=report_record.updated_at,
     )
+
+
+@router.post(
+    "/{session_id}/voice/session",
+    response_model=VoiceSessionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Issue ephemeral credentials for browser WebRTC real-time voice interview",
+)
+async def create_voice_session(
+    session_id: str,
+    voice_req: Optional[VoiceSessionRequest] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
+) -> VoiceSessionResponse:
+    """Creates a short-lived client token for OpenAI Realtime API WebRTC connection.
+
+    Security & Authorization Guards:
+    - Verifies session exists (404 Not Found if missing).
+    - Verifies session access ownership (401 Unauthorized if unauthenticated on user session,
+      403 Forbidden if accessing another user's session).
+    - Rejects completed sessions (409 Conflict).
+    - Ensures technical challenge question exists for this session (400 Bad Request if session unstarted).
+    - Ephemeral client secret is generated server-side; master API key is never exposed to browser.
+    """
+    stmt = select(InterviewSessionModel).where(InterviewSessionModel.id == session_id)
+    res = await db.execute(stmt)
+    session_record = res.scalar_one_or_none()
+
+    if session_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session '{session_id}' not found.",
+        )
+
+    verify_session_access(session_record, current_user)
+
+    if session_record.status == SessionStatus.COMPLETED.value:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot initiate a voice session for an interview that has already been completed.",
+        )
+
+    # Locate technical challenge question to ground the interviewer
+    if voice_req and voice_req.question_number:
+        pq_stmt = select(PrimaryQuestionModel).where(
+            PrimaryQuestionModel.session_id == session_id,
+            PrimaryQuestionModel.question_number == voice_req.question_number,
+        )
+    else:
+        pq_stmt = (
+            select(PrimaryQuestionModel)
+            .where(PrimaryQuestionModel.session_id == session_id)
+            .order_by(PrimaryQuestionModel.question_number.desc())
+        )
+
+    pq_res = await db.execute(pq_stmt)
+    pq = pq_res.scalars().first()
+
+    if not pq:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No technical question found for this interview session. Please start the interview session first.",
+        )
+
+    try:
+        session_data = await request_realtime_session(
+            role=session_record.role,
+            difficulty=session_record.difficulty,
+            language=session_record.primary_language,
+            question_text=pq.question_text,
+            topic=pq.topic,
+        )
+    except VoiceServiceNotConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except VoiceServiceProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error creating voice session: {type(exc).__name__}",
+        ) from exc
+
+    return VoiceSessionResponse(
+        session_id=session_record.id,
+        client_secret=session_data["client_secret"],
+        expires_at=session_data.get("expires_at"),
+        model=session_data["model"],
+        voice=session_data["voice"],
+        question_number=pq.question_number,
+        question_text=pq.question_text,
+        topic=pq.topic,
+        role=session_record.role,
+        difficulty=session_record.difficulty,
+    )
+

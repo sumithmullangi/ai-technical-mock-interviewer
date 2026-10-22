@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = Field(default=None, repr=False)
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
+    # OpenAI Realtime Configuration (Voice Interviewer)
+    OPENAI_API_KEY: Optional[str] = Field(default=None, repr=False)
+    OPENAI_REALTIME_MODEL: str = "gpt-realtime"
+    OPENAI_REALTIME_VOICE: str = "verse"
+
     # Authentication & Security Configuration
     SECRET_KEY: str = Field(default=DEV_DEFAULT_SECRET_KEY, repr=False)
     ALGORITHM: str = "HS256"
@@ -52,9 +57,9 @@ class Settings(BaseSettings):
     AUTH_COOKIE_DOMAIN: Optional[str] = None
     FRONTEND_URL: str = "http://localhost:5173"
 
-    @field_validator("GEMINI_API_KEY", mode="before")
+    @field_validator("GEMINI_API_KEY", "OPENAI_API_KEY", mode="before")
     @classmethod
-    def assemble_gemini_api_key(cls, v: Optional[str]) -> Optional[str]:
+    def assemble_api_key(cls, v: Optional[str]) -> Optional[str]:
         if isinstance(v, str):
             cleaned = v.strip().strip('"').strip("'")
             return cleaned if cleaned else None

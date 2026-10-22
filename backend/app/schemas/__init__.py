@@ -36,6 +36,10 @@ from app.schemas.interview import (
     SessionStatus,
     calculate_weighted_overall_score,
 )
+from app.schemas.voice import (
+    VoiceSessionRequest,
+    VoiceSessionResponse,
+)
 
 __all__ = [
     "AuthTokenResponse",
@@ -71,4 +75,6 @@ __all__ = [
     "SessionStartResponse",
     "SessionStatus",
     "calculate_weighted_overall_score",
+    "VoiceSessionRequest",
+    "VoiceSessionResponse",
 ]

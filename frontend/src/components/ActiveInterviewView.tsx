@@ -40,6 +40,7 @@ import type {
   ReportState,
 } from '../types';
 import { apiFetch } from '../utils/api';
+import { VoiceInterviewPanel } from './VoiceInterviewPanel';
 
 interface ActiveInterviewViewProps {
   session: StartedSessionData;
@@ -1116,6 +1117,15 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 </div>
               )}
             </div>
+
+            {/* AI Real-time Voice Interactor POC */}
+            {sessionId && (
+              <VoiceInterviewPanel
+                sessionId={sessionId}
+                questionNumber={qNum}
+                questionTopic={q?.topic || 'Technical Challenge'}
+              />
+            )}
 
             {/* Safety & Evaluation Notice */}
             <div className="p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#16061D] text-xs text-[#555555] dark:text-slate-300 flex items-start gap-3 mt-auto">
