@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
 from app.core.config import settings
@@ -161,3 +161,120 @@ async def request_realtime_session(
         raise VoiceServiceProviderError(
             "Failed to connect to OpenAI Realtime service (network connection error or timeout)."
         ) from exc
+
+
+async def generate_voice_conversational_reply(
+    role: str,
+    difficulty: str,
+    language: str,
+    question_text: str,
+    topic: str,
+    candidate_speech: str,
+    expected_concepts: Optional[List[str]] = None,
+) -> Tuple[str, bool]:
+    """Generates a concise 1-2 sentence spoken follow-up from the AI interviewer.
+
+    Zero-cost & Free Quota Resilient:
+    - If GEMINI_API_KEY is configured: attempts to synthesize a dynamic, conversational response
+      via Google Gemini's free tier.
+    - If GEMINI_API_KEY is not configured or quota is exhausted (HTTP 429) or transient error occurs:
+      gracefully falls back to deterministic, intelligent offline follow-up templates matching the
+      active question and its expected architectural concepts.
+
+    Returns:
+        Tuple of (interviewer_reply_text, is_offline)
+    """
+    clean_speech = candidate_speech.strip()
+    primary_concept = expected_concepts[0] if expected_concepts and len(expected_concepts) > 0 else "algorithmic complexity"
+    secondary_concept = expected_concepts[1] if expected_concepts and len(expected_concepts) > 1 else "edge cases"
+
+    # 1. Deterministic offline fallback builder
+    def build_offline_reply() -> str:
+        idx = len(clean_speech) % 3
+        if idx == 0:
+            return (
+                f"Understood. How would your proposed approach address {primary_concept}, "
+                f"and what are the time and space complexity trade-offs?"
+            )
+        elif idx == 1:
+            return (
+                f"That's a reasonable direction. Could you walk me through the primary failure modes or "
+                f"{secondary_concept} in this design, and how you would mitigate them?"
+            )
+        else:
+            return (
+                f"Good explanation. If the data volume or traffic scale increases by a factor of 100, "
+                f"where does your solution bottleneck, and how would you optimize {primary_concept}?"
+            )
+
+    # If GEMINI_API_KEY is unset or empty, use the intelligent offline fallback
+    if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
+        logger.info("Zero-cost voice mode: GEMINI_API_KEY not configured. Using offline conversational follow-up.")
+        return build_offline_reply(), True
+
+    # 2. Dynamic generation via Gemini Free Tier
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent"
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": settings.GEMINI_API_KEY.strip(),
+    }
+
+    system_instruction = (
+        "You are an expert senior engineering mock interviewer conducting a live conversational interview. "
+        "Keep your response strictly to 1 or 2 natural spoken sentences. "
+        "Concisely acknowledge the candidate's explanation, then probe a key technical trade-off, "
+        "algorithmic time/space complexity, edge cases, or scalability. Do not monologue, provide code, or lecture."
+    )
+    user_prompt = (
+        f"Position: {difficulty} {role} ({language})\n"
+        f"Challenge Topic: {topic}\n"
+        f"Technical Question: \"{question_text}\"\n"
+        f"Candidate just explained: \"{clean_speech}\"\n\n"
+        "Generate a 1-2 sentence spoken interviewer reply acknowledging their approach and asking a targeted technical follow-up question."
+    )
+
+    payload = {
+        "system_instruction": {
+            "parts": [{"text": system_instruction}]
+        },
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": user_prompt}]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.4,
+            "maxOutputTokens": 150,
+        },
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            response = await client.post(endpoint, headers=headers, json=payload)
+
+        if response.status_code == 200:
+            res_json = response.json()
+            candidates = res_json.get("candidates", [])
+            if candidates:
+                first_cand = candidates[0]
+                content = first_cand.get("content", {})
+                parts = content.get("parts", [])
+                if parts and "text" in parts[0]:
+                    reply_text = parts[0]["text"].strip()
+                    # Sanitize any accidental markdown formatting or quote wraps
+                    reply_text = reply_text.strip('"').strip("'").strip()
+                    if reply_text:
+                        return reply_text, False
+
+        # If HTTP 429 quota exhausted or other non-200 code, safely fallback without failing
+        logger.warning(
+            f"Gemini API returned status {response.status_code} during voice interaction. Falling back to offline response."
+        )
+        return build_offline_reply(), True
+
+    except Exception as exc:
+        logger.warning(
+            f"Exception during Gemini voice interaction ({type(exc).__name__}). Falling back to offline response."
+        )
+        return build_offline_reply(), True

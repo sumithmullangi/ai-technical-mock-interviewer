@@ -40,11 +40,17 @@ from app.schemas.interview import (
     SessionStatus,
     calculate_weighted_overall_score,
 )
-from app.schemas.voice import VoiceSessionRequest, VoiceSessionResponse
+from app.schemas.voice import (
+    VoiceSessionRequest,
+    VoiceSessionResponse,
+    VoiceInteractionRequest,
+    VoiceInteractionResponse,
+)
 from app.services.voice_service import (
     VoiceServiceError,
     VoiceServiceNotConfiguredError,
     VoiceServiceProviderError,
+    generate_voice_conversational_reply,
     request_realtime_session,
 )
 import logging
@@ -347,6 +353,12 @@ async def start_interview_session(
     status_code=status.HTTP_200_OK,
     summary="Submit and persist candidate answer for the current question",
 )
+@router.post(
+    "/{session_id}/answers",
+    response_model=AnswerSubmitResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Submit and persist candidate answer for the current question (plural alias)",
+)
 async def submit_candidate_answer(
     session_id: str,
     request: AnswerSubmitRequest,
@@ -454,10 +466,11 @@ async def evaluate_persisted_answer(
     - Never executes candidate code. Treats answer strictly as untrusted text.
     """
     target_answer_id = answer_id or (request.answer_id if request else None)
-    if not target_answer_id:
+    target_q_num = request.question_number if request else None
+    if not target_answer_id and target_q_num is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Missing answer_id. Specify answer_id in path or request body.",
+            detail="Missing answer_id or question_number. Specify answer_id in path/body or question_number in body.",
         )
 
     # 1. Verify session exists
@@ -473,20 +486,37 @@ async def evaluate_persisted_answer(
     verify_session_access(session_record, current_user)
 
     # 2. Verify answer exists and belongs to session
-    answer_stmt = select(CandidateAnswerModel).where(CandidateAnswerModel.id == target_answer_id)
-    answer_result = await db.execute(answer_stmt)
-    answer_record = answer_result.scalar_one_or_none()
-    if answer_record is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Candidate answer '{target_answer_id}' not found.",
+    if target_answer_id:
+        answer_stmt = select(CandidateAnswerModel).where(CandidateAnswerModel.id == target_answer_id)
+        answer_result = await db.execute(answer_stmt)
+        answer_record = answer_result.scalar_one_or_none()
+        if answer_record is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Candidate answer '{target_answer_id}' not found.",
+            )
+        if answer_record.session_id != session_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Candidate answer '{target_answer_id}' does not belong to session '{session_id}'.",
+            )
+    else:
+        answer_stmt = (
+            select(CandidateAnswerModel)
+            .where(
+                CandidateAnswerModel.session_id == session_id,
+                CandidateAnswerModel.question_number == target_q_num,
+            )
+            .order_by(CandidateAnswerModel.submitted_at.desc())
         )
-
-    if answer_record.session_id != session_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Candidate answer '{target_answer_id}' does not belong to session '{session_id}'.",
-        )
+        answer_result = await db.execute(answer_stmt)
+        answer_record = answer_result.scalars().first()
+        if answer_record is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No candidate answer found for question #{target_q_num} in session '{session_id}'.",
+            )
+        target_answer_id = answer_record.id
 
     # 3. Check for existing evaluation to prevent conflicting records (409 Conflict)
     eval_stmt = select(AnswerEvaluationModel).where(AnswerEvaluationModel.answer_id == target_answer_id)
@@ -499,11 +529,32 @@ async def evaluate_persisted_answer(
         )
 
     # 4. Context for evaluation
-    q_text = (request.question_text if request and request.question_text else None) or (
-        f"Technical interview problem for {session_record.role} ({session_record.difficulty}) "
-        f"in {session_record.primary_language}."
-    )
-    concepts = (request.expected_concepts if request and request.expected_concepts else None) or []
+    q_text = request.question_text if request and request.question_text else None
+    concepts = request.expected_concepts if request and request.expected_concepts is not None else None
+
+    if not q_text or concepts is None:
+        try:
+            pq_stmt = select(PrimaryQuestionModel).where(
+                PrimaryQuestionModel.session_id == session_id,
+                PrimaryQuestionModel.question_number == answer_record.question_number,
+            )
+            pq_res = await db.execute(pq_stmt)
+            pq_record = pq_res.scalar_one_or_none()
+            if pq_record:
+                if not q_text and pq_record.question_text:
+                    q_text = pq_record.question_text
+                if concepts is None and pq_record.expected_concepts:
+                    concepts = pq_record.expected_concepts
+        except Exception:
+            pass
+
+    if not q_text:
+        q_text = (
+            f"Technical interview problem for {session_record.role} ({session_record.difficulty}) "
+            f"in {session_record.primary_language}."
+        )
+    if concepts is None:
+        concepts = []
 
     # 5. Call Gemini service evaluation
     try:
@@ -1675,5 +1726,84 @@ async def create_voice_session(
         topic=pq.topic,
         role=session_record.role,
         difficulty=session_record.difficulty,
+    )
+
+
+@router.post(
+    "/{session_id}/voice/interact",
+    response_model=VoiceInteractionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Zero-cost conversational voice turn using browser speech and resilient AI follow-up",
+)
+async def interact_voice_session(
+    session_id: str,
+    interaction_req: VoiceInteractionRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
+) -> VoiceInteractionResponse:
+    """Processes candidate spoken explanation and generates a concise technical interviewer spoken response.
+
+    Zero-cost & Free Quota Resilient:
+    - ₹0 paid voice API cost (runs with browser Web Speech API).
+    - If Gemini API quota is available, provides dynamic AI follow-up.
+    - If Gemini API quota is exhausted or unconfigured, falls back deterministically to offline technical
+      follow-up prompts grounded in the question's expected architectural concepts.
+    - Authoritative interview state remains anchored to the database.
+    """
+    stmt = select(InterviewSessionModel).where(InterviewSessionModel.id == session_id)
+    res = await db.execute(stmt)
+    session_record = res.scalar_one_or_none()
+
+    if session_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session '{session_id}' not found.",
+        )
+
+    verify_session_access(session_record, current_user)
+
+    if session_record.status == SessionStatus.COMPLETED.value:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot interact in voice mode for an interview that has already been completed.",
+        )
+
+    # Locate technical challenge question to ground the interviewer
+    if interaction_req.question_number:
+        pq_stmt = select(PrimaryQuestionModel).where(
+            PrimaryQuestionModel.session_id == session_id,
+            PrimaryQuestionModel.question_number == interaction_req.question_number,
+        )
+    else:
+        pq_stmt = (
+            select(PrimaryQuestionModel)
+            .where(PrimaryQuestionModel.session_id == session_id)
+            .order_by(PrimaryQuestionModel.question_number.desc())
+        )
+
+    pq_res = await db.execute(pq_stmt)
+    pq = pq_res.scalars().first()
+
+    if not pq:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No technical question found for this interview session. Please start the interview session first.",
+        )
+
+    reply_text, is_offline = await generate_voice_conversational_reply(
+        role=session_record.role,
+        difficulty=session_record.difficulty,
+        language=session_record.primary_language,
+        question_text=pq.question_text,
+        topic=pq.topic,
+        candidate_speech=interaction_req.candidate_speech,
+        expected_concepts=pq.expected_concepts,
+    )
+
+    return VoiceInteractionResponse(
+        session_id=session_record.id,
+        question_number=pq.question_number,
+        interviewer_reply=reply_text,
+        is_offline=is_offline,
     )
 

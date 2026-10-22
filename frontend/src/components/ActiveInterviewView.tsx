@@ -262,7 +262,10 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          answer_id: submissionState.response?.answer_id || submissionState.response?.answerId,
           question_number: qNum,
+          question_text: q?.question_text || q?.questionText || '',
+          expected_concepts: expectedConcepts,
         }),
       });
 
@@ -1118,12 +1121,18 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               )}
             </div>
 
-            {/* AI Real-time Voice Interactor POC */}
+            {/* AI Zero-Cost Voice Interactor */}
             {sessionId && (
               <VoiceInterviewPanel
                 sessionId={sessionId}
                 questionNumber={qNum}
                 questionTopic={q?.topic || 'Technical Challenge'}
+                questionText={q?.question_text || ''}
+                onInsertTranscript={(transcript) => {
+                  setAnswerText((prev) =>
+                    prev ? `${prev}\n\n// Spoken Technical Explanation:\n${transcript}` : transcript
+                  );
+                }}
               />
             )}
 
@@ -1302,6 +1311,20 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                         </>
                       )}
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Evaluation Notice Banner (e.g. quota exhausted or service notice) */}
+              {evaluationState.status === 'error' && (
+                <div
+                  id="evaluation-error-banner"
+                  className="p-4 border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5 animate-fadeIn"
+                >
+                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5 flex-1">
+                    <p className="font-semibold">Live AI Evaluation Notice</p>
+                    <p className="font-sans leading-relaxed">{evaluationState.errorMessage}</p>
                   </div>
                 </div>
               )}

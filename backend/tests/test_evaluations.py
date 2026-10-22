@@ -11,6 +11,7 @@ from app.models.interview import (
     AnswerEvaluationModel,
     CandidateAnswerModel,
     InterviewSessionModel,
+    PrimaryQuestionModel,
 )
 from app.schemas.interview import (
     GeminiEvaluationOutput,
@@ -628,3 +629,140 @@ def test_evaluate_answer_alias_endpoint():
             assert data["overall_score"] == 8.85
     finally:
         app.dependency_overrides.clear()
+
+
+def test_evaluate_answer_by_question_number_resolution():
+    """Verify evaluation via question_number resolution when answer_id is omitted (regression test)."""
+    active_session = InterviewSessionModel(
+        id="mock-eval-qnum",
+        role="Full-Stack Web Architect",
+        difficulty="Senior",
+        primary_language="Python",
+        question_count=4,
+        status="in_progress",
+        created_at=datetime.now(timezone.utc),
+    )
+    candidate_answer = CandidateAnswerModel(
+        id="ans-eval-qnum-1",
+        session_id="mock-eval-qnum",
+        question_number=1,
+        answer_text="Using distributed locks with Redis and fencing tokens.",
+        submitted_at=datetime.now(timezone.utc),
+    )
+    primary_question = PrimaryQuestionModel(
+        id="pq-eval-qnum-1",
+        session_id="mock-eval-qnum",
+        question_number=1,
+        topic="Distributed Concurrency & Idempotency",
+        difficulty="Senior",
+        question_text="Design an idempotent distributed transaction processor.",
+        expected_concepts=["Idempotency Keys", "Distributed Locking", "Fencing Tokens"],
+        created_at=datetime.now(timezone.utc),
+    )
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    # 1. session query
+    session_res = MagicMock()
+    session_res.scalar_one_or_none.return_value = active_session
+
+    # 2. answer query by (session_id, question_number)
+    answer_res = MagicMock()
+    answer_res.scalars.return_value.first.return_value = candidate_answer
+
+    # 3. existing eval query
+    eval_res = MagicMock()
+    eval_res.scalar_one_or_none.return_value = None
+
+    # 4. primary question query for context
+    pq_res = MagicMock()
+    pq_res.scalar_one_or_none.return_value = primary_question
+
+    mock_session.execute = AsyncMock(side_effect=[session_res, answer_res, eval_res, pq_res])
+    mock_session.add = MagicMock()
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
+
+    mock_eval_output = GeminiEvaluationOutput(
+        correctness=8.5,
+        technical_depth=8.0,
+        edge_cases=7.5,
+        communication=9.0,
+        feedback="Solid architectural approach with distributed idempotency.",
+        strengths=["Idempotency keys", "Fencing tokens"],
+        missing_concepts=["Clock skew mitigation"],
+        suggestions=["Add retry jitter."],
+    )
+
+    async def override_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        with patch(
+            "app.api.v1.endpoints.interviews.evaluate_candidate_answer",
+            new=AsyncMock(return_value=(mock_eval_output, 8.25)),
+        ) as mock_eval_call:
+            res = client.post(
+                "/api/v1/interviews/mock-eval-qnum/evaluate",
+                json={"question_number": 1},
+            )
+            assert res.status_code == 200
+            data = res.json()
+            assert data["status"] == "evaluated"
+            assert data["answer_id"] == "ans-eval-qnum-1"
+            assert data["overall_score"] == 8.25
+            assert data["scores"]["correctness"] == 8.5
+
+            # Verify evaluation service was called with context from PrimaryQuestionModel
+            mock_eval_call.assert_awaited_once()
+            call_kwargs = mock_eval_call.await_args.kwargs
+            assert call_kwargs["question_text"] == "Design an idempotent distributed transaction processor."
+            assert "Idempotency Keys" in call_kwargs["expected_concepts"]
+            assert call_kwargs["answer_text"] == candidate_answer.answer_text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_evaluate_answer_missing_answer_id_and_question_number_returns_422():
+    """Verify evaluation returns HTTP 422 if neither answer_id nor question_number is supplied."""
+    res = client.post(
+        "/api/v1/interviews/mock-session-test/evaluate",
+        json={},
+    )
+    assert res.status_code == 422
+    assert "Missing answer_id or question_number" in res.json()["detail"]
+
+
+def test_evaluate_answer_nonexistent_question_number_returns_404():
+    """Verify evaluation returns HTTP 404 if question_number has no submitted answer."""
+    active_session = InterviewSessionModel(
+        id="mock-eval-noans",
+        role="Backend Engineer",
+        difficulty="Senior",
+        primary_language="Python",
+        question_count=4,
+        status="in_progress",
+        created_at=datetime.now(timezone.utc),
+    )
+    mock_session = AsyncMock(spec=AsyncSession)
+    session_res = MagicMock()
+    session_res.scalar_one_or_none.return_value = active_session
+
+    answer_res = MagicMock()
+    answer_res.scalars.return_value.first.return_value = None
+    mock_session.execute = AsyncMock(side_effect=[session_res, answer_res])
+
+    async def override_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        res = client.post(
+            "/api/v1/interviews/mock-eval-noans/evaluate",
+            json={"question_number": 99},
+        )
+        assert res.status_code == 404
+        assert "No candidate answer found for question #99" in res.json()["detail"]
+    finally:
+        app.dependency_overrides.clear()
+

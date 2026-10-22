@@ -257,3 +257,46 @@ def test_submit_answer_with_aliases():
         assert res.json()["status"] == "submitted"
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+def test_submit_answer_plural_route_alias():
+    """Regression test: Verify POST /api/v1/interviews/{session_id}/answers succeeds (plural alias).
+    
+    Prevents 404 Not Found error when the frontend ActiveInterviewView submits candidate answers.
+    """
+    active_session = InterviewSessionModel(
+        id="mock-plural-ans-101",
+        role="Backend Engineer",
+        difficulty="Senior",
+        primary_language="Python",
+        question_count=5,
+        status="in_progress",
+        created_at=datetime.now(timezone.utc),
+    )
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = active_session
+    mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_session.add = MagicMock()
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
+
+    async def override_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        payload = {
+            "question_number": 1,
+            "answer_text": "Plural endpoint submission verification.",
+        }
+        res = client.post("/api/v1/interviews/mock-plural-ans-101/answers", json=payload)
+        assert res.status_code == 200, f"Expected 200 OK on /answers, got {res.status_code} ({res.text})"
+        data = res.json()
+        assert data["status"] == "submitted"
+        assert data["session_id"] == "mock-plural-ans-101"
+        assert data["question_number"] == 1
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+

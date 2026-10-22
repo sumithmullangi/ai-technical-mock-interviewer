@@ -146,6 +146,11 @@ class AnswerEvaluationRequest(BaseModel):
         default=None,
         description="Candidate answer ID if not specified in URL path",
     )
+    question_number: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description="Optional primary question number (1-based) to resolve answer if answer_id is omitted",
+    )
     question_text: Optional[str] = Field(
         default=None,
         description="Optional problem statement for evaluation context",

@@ -132,7 +132,7 @@ PROJECT/
 │   │           └── endpoints/
 │   │               ├── health.py  # GET /api/health and /api/health/db
 │   │               └── interviews.py # Lifecycle endpoints (config, start, answer, report)
-│   └── tests/                     # Pytest suite (94 automated tests)
+│   └── tests/                     # Pytest suite (196 automated tests)
 │       ├── test_health.py         # Health checks & CORS headers
 │       ├── test_interviews.py     # Configuration validation bounds
 │       ├── test_session_lifecycle.py # State machine transitions & rollback
@@ -259,9 +259,15 @@ GEMINI_MODEL="gemini-2.5-flash"
 ```
 
 > [!NOTE]
-> **Gemini API Key & Offline Mock Behavior**:
-> - **When `GEMINI_API_KEY` is omitted or left empty (`""`)**: The backend operates in deterministic offline mock mode. Questions and reports are generated locally without external network requests, enabling cost-free testing and continuous development.
-> - **When `GEMINI_API_KEY` is set**: The backend makes live calls to Google's Gemini API. If the API key is invalid, network connectivity fails, or the Gemini rate limit/quota is exhausted (`HTTP 429`), the service returns an explicit `HTTP 502 Bad Gateway` error (`GeminiProviderError`). It will never silently fabricate simulated responses when a real API call fails.
+> **Gemini API Key, Free-Tier Quota & Resilient Fallback Behavior**:
+> - **When `GEMINI_API_KEY` is omitted or empty (`""`)**: The backend operates in deterministic offline catalog mode. Questions, follow-ups, and reports are generated locally without external network requests, enabling ₹0 cost-free testing and offline development.
+> - **When `GEMINI_API_KEY` is configured**: The backend makes live calls to Google's Gemini API (`gemini-2.5-flash`).
+> - **Free-Tier Daily Quota Exhaustion (`HTTP 429`)**: Google Gemini free-tier accounts have a daily limit (20 requests/day). When quota is exhausted, the system:
+>   1. Detects `RESOURCE_EXHAUSTED` / `429` immediately without burning redundant retry attempts.
+>   2. Returns an explicit, informative `HTTP 429` response: *"AI evaluation quota exhausted: Live AI evaluation is temporarily unavailable due to Gemini API daily quota limits. Your answer has been safely recorded. You can proceed directly to the next question."*
+>   3. Preserves all submitted answers safely in PostgreSQL.
+>   4. Renders a visible live evaluation notice banner in the UI and allows the candidate to advance without losing progress.
+>   5. Produces a truthful final report marking unevaluated challenges as *"Not Evaluated"* with clause *"with challenges completed in offline mode (live AI evaluation unrecorded)"*. The system strictly refuses to fabricate synthetic or mock scores when live evaluations could not be performed.
 
 #### Run Database Migrations
 Make sure you are in the `backend/` directory with the virtual environment activated:
@@ -325,11 +331,19 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ## 🧪 Testing Instructions
 
 ### Run Backend Pytest Suite
-Run the full test suite (94 automated unit and integration tests covering health checks, session lifecycle, answer submissions, evaluations, follow-ups, and final reports):
+Run the full test suite (196 automated unit and integration tests covering health checks, authentication, user session isolation, session lifecycle, answer submissions, evaluations, follow-ups, offline 429 fallbacks, and final reports):
 
 ```powershell
 # In the backend directory with virtual environment activated:
 pytest -v
+```
+
+### Run Frontend Unit Tests
+Execute the native Node test suite (8 tests covering browser speech capabilities, speech recognition lifecycle, pause-detected thought completion, half-duplex echo suppression, and barge-in interruption):
+
+```powershell
+# In the frontend directory:
+npm test
 ```
 
 ### Run Frontend Verification & Production Build
@@ -401,10 +415,11 @@ All interview endpoints are prefixed with `/api/v1/interviews` (and aliased unde
   - **Stage 3**: Adaptive follow-up generation and answers (max 2 limit, `follow_up_questions` table)
   - **Stage 4**: Primary question progression guardrails and completion logic (`primary_questions` table)
   - **Stage 5**: Final interview performance report (`interview_reports` table, idempotent report generation, frontend scorecard & drilldown)
-- [ ] **Roadmap / Not Implemented**
-  - **User Authentication & Profiles**: Currently operates in guest session mode only; no user accounts or JWTs.
-  - **Voice Mode**: Real-time microphone audio capture and text-to-speech synthesis are not implemented.
-  - **Embedded In-Browser IDE**: Currently provides a styled monospace code textarea; full Monaco/CodeMirror editor is not implemented.
+- [x] **Milestone 6: Production Hardening, Authentication & Voice Mode**
+  - **User Authentication & Multi-Tenancy**: Secure user registration, bcrypt password hashing, JWT bearer tokens, active session management, password resets, and strict cross-user session isolation.
+  - **Zero-Cost Voice Mode**: Browser Web Speech API integration (₹0 paid API usage), real-time interim recognition, pause detection for completed thoughts, half-duplex echo suppression (disabling mic during synthesizer playback), instant barge-in interruption, and concept-grounded follow-ups.
+- [ ] **Roadmap / Future Work**
+  - **Embedded In-Browser IDE**: Currently provides a styled monospace code workspace; integration of a full Monaco/CodeMirror editor with LSP is planned for future releases.
 
 ---
 

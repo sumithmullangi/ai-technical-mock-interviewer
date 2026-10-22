@@ -24,3 +24,26 @@ class VoiceSessionResponse(BaseModel):
     topic: str = Field(description="Technical topic.")
     role: str = Field(description="Target engineering role.")
     difficulty: str = Field(description="Seniority level.")
+
+
+class VoiceInteractionRequest(BaseModel):
+    """Payload for browser Web Speech zero-cost conversational turn."""
+    question_number: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=10,
+        description="Active question number.",
+    )
+    candidate_speech: str = Field(
+        min_length=1,
+        max_length=5000,
+        description="Candidate's recognized spoken text.",
+    )
+
+
+class VoiceInteractionResponse(BaseModel):
+    """Interviewer spoken response for browser speech synthesis."""
+    session_id: str = Field(description="Interview session ID.")
+    question_number: int = Field(description="Question number.")
+    interviewer_reply: str = Field(description="Natural, concise interviewer speech output to synthesize.")
+    is_offline: bool = Field(default=False, description="Whether response was generated using offline fallback.")

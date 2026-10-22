@@ -39,6 +39,8 @@ from app.schemas.interview import (
 from app.schemas.voice import (
     VoiceSessionRequest,
     VoiceSessionResponse,
+    VoiceInteractionRequest,
+    VoiceInteractionResponse,
 )
 
 __all__ = [
@@ -77,4 +79,6 @@ __all__ = [
     "calculate_weighted_overall_score",
     "VoiceSessionRequest",
     "VoiceSessionResponse",
+    "VoiceInteractionRequest",
+    "VoiceInteractionResponse",
 ]
