@@ -225,16 +225,11 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
       />
 
       {/* Modal Dialog Box */}
-      <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#16061D] p-6 shadow-2xl sm:p-8 text-[#111111] dark:text-[#F8F6F1]">
-        <div className="editorial-crosshair -top-2.5 -left-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-        <div className="editorial-crosshair -top-2.5 -right-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-        <div className="editorial-crosshair -bottom-2.5 -left-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-        <div className="editorial-crosshair -bottom-2.5 -right-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-
+      <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#16061D] p-6 shadow-2xl sm:p-8 text-[#111111] dark:text-[#F8F6F1] rounded-3xl">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#3A0F34] dark:bg-[#250C3D] text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3A0F34] to-[#55164D] text-white shadow-xs">
               <Sliders className="h-4 w-4 text-[#EAAA00]" />
             </div>
             <div>
@@ -247,14 +242,14 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 border border-[#E5DFD5] dark:border-[#3A0F34] text-[#7A7875] dark:text-slate-400 hover:bg-white dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1] transition cursor-pointer"
+            className="p-2 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] text-[#7A7875] dark:text-slate-400 hover:bg-white dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1] transition cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Session Notice */}
-        <div className="mt-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#120516] p-3.5 shadow-xs">
+        <div className="mt-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#120516] p-4 shadow-xs">
           <div className="flex items-start gap-2.5">
             <Info className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
             <div className="text-xs text-[#555555] dark:text-slate-300 space-y-0.5 font-sans leading-relaxed">
@@ -270,7 +265,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
         {(validationError || submission.status === 'error') && (
           <div
             role="alert"
-            className="mt-4 border border-rose-200 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/60 p-3.5 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5"
+            className="mt-4 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/60 p-3.5 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5"
           >
             <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             <div className="flex-1 font-mono">
@@ -282,7 +277,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
 
         {/* Success Confirmation Card */}
         {submission.status === 'success' && submission.sessionData && (
-          <div className="mt-5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] p-4 shadow-xs">
+          <div className="mt-5 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] p-4.5 shadow-xs">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
               <div className="flex-1 text-xs">
@@ -290,7 +285,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
                   <p className="font-bold text-[#3A0F34] dark:text-[#EAAA00] text-sm">
                     Configuration Verified & Saved
                   </p>
-                  <span className="font-mono text-[11px] bg-[#FAF8F5] dark:bg-[#250C3D] px-2 py-0.5 text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <span className="font-mono text-[11px] bg-[#FAF8F5] dark:bg-[#250C3D] px-2.5 py-0.5 rounded-full text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34]">
                     {submission.sessionData.sessionId}
                   </span>
                 </div>
@@ -298,7 +293,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
                   {submission.sessionData.message}
                 </p>
 
-                <div className="mt-3 bg-[#FAF8F5] dark:bg-[#250C3D]/50 p-3 border border-[#E5DFD5] dark:border-[#3A0F34] grid grid-cols-2 gap-2 text-[11px] font-mono">
+                <div className="mt-3 bg-[#FAF8F5] dark:bg-[#250C3D]/50 p-3 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] grid grid-cols-2 gap-2 text-[11px] font-mono">
                   <div>
                     <span className="text-[#7A7875] dark:text-slate-400">Role:</span>{' '}
                     <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">{submission.sessionData.config.role}</span>
@@ -350,7 +345,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
                 setConfig({ ...config, role: e.target.value });
                 if (validationError) setValidationError(null);
               }}
-              className="mt-1.5 w-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] px-3.5 py-2.5 text-sm text-[#111111] dark:text-[#F8F6F1] focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none focus:ring-1 focus:ring-[#3A0F34] dark:focus:ring-[#EAAA00] disabled:opacity-50 font-sans"
+              className="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-[#3A0F34] bg-white dark:bg-[#120516] px-3.5 py-2.5 text-sm text-[#111111] dark:text-[#F8F6F1] focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none focus:ring-2 focus:ring-[#3A0F34]/15 disabled:opacity-50 font-sans shadow-2xs"
             >
               <option value="Backend Engineer (Distributed Systems)">
                 Backend Engineer (Distributed Systems)
@@ -382,10 +377,10 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
                     setConfig({ ...config, difficulty: level });
                     if (validationError) setValidationError(null);
                   }}
-                  className={`py-2 text-xs font-mono font-medium transition cursor-pointer disabled:opacity-50 ${
+                  className={`py-2.5 text-xs font-mono font-medium rounded-xl transition cursor-pointer disabled:opacity-50 ${
                     config.difficulty === level
-                      ? 'border border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
-                      : 'border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#555555] dark:text-slate-300 hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                      ? 'border border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold shadow-xs'
+                      : 'border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#555555] dark:text-slate-300 hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1] shadow-2xs'
                   }`}
                 >
                   {level}
@@ -414,10 +409,10 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
                     setConfig({ ...config, primaryLanguage: lang });
                     if (validationError) setValidationError(null);
                   }}
-                  className={`py-2 text-xs font-mono font-medium transition cursor-pointer disabled:opacity-50 ${
+                  className={`py-2.5 text-xs font-mono font-medium rounded-xl transition cursor-pointer disabled:opacity-50 ${
                     config.primaryLanguage === lang
-                      ? 'border border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
-                      : 'border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#555555] dark:text-slate-300 hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                      ? 'border border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold shadow-xs'
+                      : 'border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#555555] dark:text-slate-300 hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1] shadow-2xs'
                   }`}
                 >
                   {lang}
@@ -459,7 +454,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
 
           {/* Launch Error Alert */}
           {launchState.status === 'error' && (
-            <div className="mt-4 flex items-start gap-2.5 border border-rose-200 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/60 p-3.5 text-xs text-rose-800 dark:text-rose-200 font-mono">
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/60 p-3.5 text-xs text-rose-800 dark:text-rose-200 font-mono shadow-xs">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
               <div>
                 <span className="font-semibold text-rose-900 dark:text-rose-300">Session Launch Error:</span>{' '}
@@ -474,7 +469,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={submission.status === 'submitting' || launchState.status === 'starting'}
-              className="w-full sm:w-auto border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] px-4 py-2 text-xs font-mono font-medium text-[#111111] dark:text-[#F8F6F1] hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] transition disabled:opacity-50 uppercase tracking-wider cursor-pointer"
+              className="w-full sm:w-auto rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] px-4 py-2.5 text-xs font-mono font-medium text-[#111111] dark:text-[#F8F6F1] hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] transition disabled:opacity-50 uppercase tracking-wider cursor-pointer shadow-2xs"
             >
               Close
             </button>
@@ -484,7 +479,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
               <button
                 type="submit"
                 disabled={submission.status === 'submitting' || launchState.status === 'starting'}
-                className="inline-flex items-center justify-center gap-1.5 bg-[#3A0F34] dark:bg-[#250C3D] border border-[#3A0F34] dark:border-[#EAAA00] px-4 py-2 text-xs font-bold text-white dark:text-[#F8F6F1] shadow-xs hover:bg-[#2A0B26] dark:hover:bg-[#34114F] transition disabled:opacity-50 cursor-pointer uppercase tracking-wider"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#3A0F34] to-[#55164D] hover:from-[#2E0B29] hover:to-[#45103E] dark:bg-[#250C3D] border border-[#3A0F34] dark:border-[#EAAA00] px-5 py-2.5 text-xs font-bold text-white dark:text-[#F8F6F1] shadow-xs hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 cursor-pointer uppercase tracking-wider"
               >
                 {submission.status === 'submitting' ? (
                   <>
@@ -505,7 +500,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
                   type="button"
                   onClick={handleLaunchSession}
                   disabled={launchState.status === 'starting'}
-                  className="inline-flex items-center justify-center gap-1.5 bg-[#3A0F34] dark:bg-[#EAAA00] border border-[#3A0F34] dark:border-[#EAAA00] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] px-4 py-2 text-xs font-bold text-white dark:text-[#120516] shadow-xs transition disabled:opacity-50 cursor-pointer uppercase tracking-wider"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#3A0F34] to-[#55164D] hover:from-[#2E0B29] hover:to-[#45103E] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] border border-[#3A0F34] dark:border-[#EAAA00] px-5 py-2.5 text-xs font-bold text-white dark:text-[#120516] shadow-xs hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 cursor-pointer uppercase tracking-wider"
                   title="Launch verified interview session and generate Question 1."
                 >
                   {launchState.status === 'starting' ? (
@@ -524,7 +519,7 @@ export const InterviewSetupModal: React.FC<InterviewSetupModalProps> = ({
                 <button
                   type="button"
                   disabled
-                  className="inline-flex items-center justify-center gap-1.5 bg-[#FAF8F5] dark:bg-[#120516] px-4 py-2 text-xs font-semibold text-[#7A7875] dark:text-slate-500 cursor-not-allowed border border-[#E5DFD5] dark:border-[#3A0F34] uppercase tracking-wider"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#FAF8F5] dark:bg-[#120516] px-4 py-2.5 text-xs font-semibold text-[#7A7875] dark:text-slate-500 cursor-not-allowed border border-[#E5DFD5] dark:border-[#3A0F34] uppercase tracking-wider"
                   title="Validate and save configuration first to enable session launch."
                 >
                   <Lock className="h-3.5 w-3.5" />

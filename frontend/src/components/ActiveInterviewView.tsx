@@ -562,11 +562,8 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
 
           {/* Dossier Hero Section */}
           <section className="px-4 sm:px-8 lg:px-12 py-12 sm:py-16 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 relative overflow-hidden bg-transparent dark:bg-[#120516]">
-            <div className="editorial-crosshair -top-3 -left-3 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-            <div className="editorial-crosshair -top-3 -right-3 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-
             <div className="max-w-4xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[10px] font-mono tracking-widest uppercase text-[#3A0F34] dark:text-[#EAAA00] mb-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[10px] font-mono tracking-widest uppercase text-[#3A0F34] dark:text-[#EAAA00] mb-4 shadow-2xs">
                 <Trophy className="h-3.5 w-3.5 text-[#EAAA00]" />
                 <span>INTERVIEW ROUND COMPLETED • OFFICIAL REPORT</span>
               </div>
@@ -581,20 +578,20 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
 
               {/* Quick Metrics Broadsheet Bar */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl">
-                <div className="p-3.5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/80 dark:bg-[#16061D]/80">
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-0.5">Role</span>
+                <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] shadow-2xs">
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">Role</span>
                   <span className="text-xs sm:text-sm font-bold text-[#111111] dark:text-[#F8F6F1] truncate block">{config?.role || 'Engineer'}</span>
                 </div>
-                <div className="p-3.5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/80 dark:bg-[#16061D]/80">
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-0.5">Seniority</span>
+                <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] shadow-2xs">
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">Seniority</span>
                   <span className="text-xs sm:text-sm font-bold text-[#3A0F34] dark:text-[#EAAA00] truncate block">{config?.difficulty || 'Senior'}</span>
                 </div>
-                <div className="p-3.5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/80 dark:bg-[#16061D]/80">
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-0.5">Language</span>
+                <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] shadow-2xs">
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">Language</span>
                   <span className="text-xs sm:text-sm font-bold text-[#111111] dark:text-[#F8F6F1] truncate block">{config?.primaryLanguage || 'Python'}</span>
                 </div>
-                <div className="p-3.5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/80 dark:bg-[#16061D]/80">
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-0.5">Progress</span>
+                <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] shadow-2xs">
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">Progress</span>
                   <span className="text-xs sm:text-sm font-bold text-[#3A0F34] dark:text-[#EAAA00] truncate block font-mono">
                     {rep?.answered_questions ?? rep?.answeredQuestions ?? totalQuestions} / {totalQuestions} Done
                   </span>
@@ -623,7 +620,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 <p className="text-xs text-rose-700 dark:text-rose-300 mb-4">{reportState.errorMessage || 'An error occurred fetching the final assessment.'}</p>
                 <button
                   onClick={() => fetchReport(false)}
-                  className="px-5 py-2.5 bg-white dark:bg-[#250C3D] hover:bg-rose-100 dark:hover:bg-[#34114F] border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-mono font-bold transition flex items-center gap-2 mx-auto cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-white dark:bg-[#250C3D] hover:bg-rose-100 dark:hover:bg-[#34114F] border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-mono font-bold transition flex items-center gap-2 mx-auto cursor-pointer shadow-xs"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   <span>Retry Report Retrieval</span>
@@ -634,11 +631,11 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
 
           {/* Success State Report Body */}
           {reportState.status === 'success' && rep && (
-            <div className="divide-y divide-[#E5DFD5] dark:divide-[#3A0F34]/50">
+            <div className="p-4 sm:p-8 space-y-6">
               {/* Scorecard Broadsheet Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#E5DFD5] dark:divide-[#3A0F34]/50">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Overall Score Dial */}
-                <div className="lg:col-span-4 p-8 sm:p-10 flex flex-col items-center justify-center text-center bg-[#FAF8F5]/60 dark:bg-[#16061D]/80">
+                <div className="lg:col-span-4 p-8 sm:p-10 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col items-center justify-center text-center bg-white dark:bg-[#16061D] shadow-xs">
                   <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#7A7875] dark:text-slate-400 mb-3 flex items-center gap-1.5">
                     <Award className="h-3.5 w-3.5 text-[#EAAA00]" />
                     Overall Calibrated Score
@@ -653,7 +650,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                     <span className="text-xs font-mono text-[#7A7875] dark:text-slate-400 font-semibold block mt-1">Scale: 0.0 - 10.0</span>
                   </div>
 
-                  <div className="mt-4 px-4 py-1.5 bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] text-xs font-mono font-bold">
+                  <div className="mt-4 px-4 py-1.5 rounded-full bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] text-xs font-mono font-bold shadow-2xs">
                     {rep.performance_rating || rep.performanceRating || 'Completed'}
                   </div>
 
@@ -663,7 +660,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 </div>
 
                 {/* 4 Dimension Breakdown */}
-                <div className="lg:col-span-8 p-8 sm:p-10 flex flex-col justify-between bg-[#F8F6F1]/70 dark:bg-[#16061D]/60">
+                <div className="lg:col-span-8 p-8 sm:p-10 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col justify-between bg-white dark:bg-[#16061D] shadow-xs">
                   <div className="flex items-center justify-between mb-6">
                     <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold flex items-center gap-2">
                       <BarChart3 className="h-4 w-4 text-[#EAAA00]" />
@@ -686,9 +683,9 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                             : 'Not Evaluated'}
                         </span>
                       </div>
-                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-1.5 rounded-none overflow-hidden">
+                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full"
+                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full rounded-full transition-all duration-500"
                           style={{ width: `${((rep.scores?.correctness_average ?? rep.scores?.correctnessAverage ?? 0) / 10) * 100}%` }}
                         ></div>
                       </div>
@@ -707,9 +704,9 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                             : 'Not Evaluated'}
                         </span>
                       </div>
-                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-1.5 rounded-none overflow-hidden">
+                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full"
+                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full rounded-full transition-all duration-500"
                           style={{ width: `${((rep.scores?.technical_depth_average ?? rep.scores?.technicalDepthAverage ?? 0) / 10) * 100}%` }}
                         ></div>
                       </div>
@@ -728,9 +725,9 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                             : 'Not Evaluated'}
                         </span>
                       </div>
-                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-1.5 rounded-none overflow-hidden">
+                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full"
+                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full rounded-full transition-all duration-500"
                           style={{ width: `${((rep.scores?.edge_cases_average ?? rep.scores?.edgeCasesAverage ?? 0) / 10) * 100}%` }}
                         ></div>
                       </div>
@@ -749,9 +746,9 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                             : 'Not Evaluated'}
                         </span>
                       </div>
-                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-1.5 rounded-none overflow-hidden">
+                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full"
+                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full rounded-full transition-all duration-500"
                           style={{ width: `${((rep.scores?.communication_average ?? rep.scores?.communicationAverage ?? 0) / 10) * 100}%` }}
                         ></div>
                       </div>
@@ -761,7 +758,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               </div>
 
               {/* Executive AI Narrative Synthesis */}
-              <div className="p-8 sm:p-10 bg-[#FAF8F5]/80 dark:bg-[#16061D]/80">
+              <div className="p-8 sm:p-10 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#16061D] shadow-xs">
                 <div className="flex items-center gap-2 mb-3 text-[10px] font-mono uppercase tracking-[0.25em] text-[#3A0F34] dark:text-[#EAAA00] font-bold">
                   <Bot className="h-4 w-4 text-[#EAAA00]" />
                   <span>Executive Qualitative Assessment</span>
@@ -772,17 +769,17 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               </div>
 
               {/* Insights Triplet (Strengths, Gaps, Recommendations) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E5DFD5] dark:divide-[#3A0F34]/50">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Strengths */}
-                <div className="p-6 sm:p-8 flex flex-col bg-[#F8F6F1]/70 dark:bg-[#16061D]/60">
+                <div className="p-6 sm:p-8 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col bg-white dark:bg-[#16061D] shadow-xs">
                   <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] uppercase tracking-wider mb-4">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-[#3A0F34] dark:text-[#EAAA00]" />
                     <span>Demonstrated Strengths</span>
                   </div>
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-2.5 flex-1">
                     {(rep.strengths || []).length > 0 ? (
                       (rep.strengths || []).map((s, idx) => (
-                        <div key={idx} className="p-3 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2">
+                        <div key={idx} className="p-3.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2 shadow-2xs">
                           <Check className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
                           <span className="font-sans leading-relaxed">{s}</span>
                         </div>
@@ -794,15 +791,15 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 </div>
 
                 {/* Growth Areas */}
-                <div className="p-6 sm:p-8 flex flex-col bg-[#F8F6F1]/70 dark:bg-[#16061D]/60">
+                <div className="p-6 sm:p-8 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col bg-white dark:bg-[#16061D] shadow-xs">
                   <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] uppercase tracking-wider mb-4">
                     <AlertTriangle className="h-4 w-4 shrink-0 text-[#EAAA00]" />
                     <span>Growth Areas & Gaps</span>
                   </div>
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-2.5 flex-1">
                     {(rep.improvement_areas || rep.improvementAreas || []).length > 0 ? (
                       (rep.improvement_areas || rep.improvementAreas || []).map((m, idx) => (
-                        <div key={idx} className="p-3 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2">
+                        <div key={idx} className="p-3.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2 shadow-2xs">
                           <AlertCircle className="h-3.5 w-3.5 text-[#EAAA00] shrink-0 mt-0.5" />
                           <span className="font-sans leading-relaxed">{m}</span>
                         </div>
@@ -814,15 +811,15 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 </div>
 
                 {/* Recommendations */}
-                <div className="p-6 sm:p-8 flex flex-col bg-[#F8F6F1]/70 dark:bg-[#16061D]/60">
+                <div className="p-6 sm:p-8 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col bg-white dark:bg-[#16061D] shadow-xs">
                   <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] uppercase tracking-wider mb-4">
                     <GraduationCap className="h-4 w-4 shrink-0 text-[#3A0F34] dark:text-[#EAAA00]" />
                     <span>Study Recommendations</span>
                   </div>
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-2.5 flex-1">
                     {(rep.study_recommendations || rep.studyRecommendations || []).length > 0 ? (
                       (rep.study_recommendations || rep.studyRecommendations || []).map((rec, idx) => (
-                        <div key={idx} className="p-3 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2">
+                        <div key={idx} className="p-3.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2 shadow-2xs">
                           <Lightbulb className="h-3.5 w-3.5 text-[#EAAA00] shrink-0 mt-0.5" />
                           <span className="font-sans leading-relaxed">{rec}</span>
                         </div>
@@ -835,7 +832,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               </div>
 
               {/* Per-Question Detailed Breakdown */}
-              <div className="p-8 sm:p-10 bg-white dark:bg-[#16061D]">
+              <div className="p-8 sm:p-10 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#16061D] shadow-xs">
                 <div className="mb-6">
                   <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold block mb-1">
                     CHALLENGE DRILLDOWN
@@ -852,25 +849,25 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                     const qScore = pq.overall_score ?? pq.overallScore;
 
                     return (
-                      <div key={num} className="border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#FAF8F5]/80 dark:bg-[#120516]">
+                      <div key={num} className="rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#FAF8F5]/80 dark:bg-[#120516] overflow-hidden transition-all shadow-2xs">
                         {/* Accordion Header */}
                         <button
                           onClick={() => setExpandedQuestionNumber(isExpanded ? null : (num ?? 1))}
                           className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 text-left hover:bg-white dark:hover:bg-[#250C3D]/30 transition cursor-pointer"
                         >
                           <div className="flex flex-wrap items-center gap-3">
-                            <span className="px-2.5 py-1 bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold">
+                            <span className="px-3 py-1 rounded-full bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold shadow-2xs">
                               Q#{num}
                             </span>
                             <span className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.topic}</span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 bg-white dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-300 border border-[#E5DFD5] dark:border-[#3A0F34]">
+                            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-white dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-300 border border-[#E5DFD5] dark:border-[#3A0F34]">
                               {pq.difficulty}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-3 shrink-0">
                             {qScore != null ? (
-                              <span className="font-mono text-xs font-bold px-2.5 py-1 bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#EAAA00]">
+                              <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#EAAA00] shadow-2xs">
                                 Score: {qScore.toFixed(1)} / 10
                               </span>
                             ) : (
@@ -892,7 +889,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">
                                 Problem Statement
                               </span>
-                              <p className="text-xs sm:text-sm text-[#222222] dark:text-slate-300 leading-relaxed p-4 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 font-sans">
+                              <p className="text-xs sm:text-sm text-[#222222] dark:text-slate-300 leading-relaxed p-4 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 font-sans shadow-2xs">
                                 {pq.question_text || pq.questionText}
                               </p>
                             </div>
@@ -910,11 +907,11 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                                 )}
                               </div>
                               {(pq.answer_text || pq.answerText) ? (
-                                <pre className="p-4 bg-[#111111] border border-[#111111] dark:border-[#3A0F34] font-mono text-xs text-[#FAF8F5] overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                                <pre className="p-4 rounded-xl bg-[#111111] border border-[#111111] dark:border-[#3A0F34] font-mono text-xs text-[#FAF8F5] overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-xs">
                                   <code>{pq.answer_text || pq.answerText}</code>
                                 </pre>
                               ) : (
-                                <p className="text-xs text-[#7A7875] dark:text-slate-400 italic p-3 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60">
+                                <p className="text-xs text-[#7A7875] dark:text-slate-400 italic p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60">
                                   No answer submitted for this question.
                                 </p>
                               )}
@@ -922,7 +919,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
 
                             {/* Question Evaluation Details */}
                             {(pq.feedback || qScore != null) && (
-                              <div className="p-4 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 space-y-3">
+                              <div className="p-4 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 space-y-3 shadow-2xs">
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#3A0F34] dark:text-[#EAAA00] flex items-center gap-1.5">
                                     <Sparkles className="h-3.5 w-3.5 text-[#EAAA00]" />
@@ -940,19 +937,19 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                                 )}
 
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[11px] font-mono">
-                                  <div className="p-2 bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                                  <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
                                     <span className="text-[#7A7875] dark:text-slate-400 block text-[10px]">Correctness</span>
                                     <span className="font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.correctness_score ?? pq.correctnessScore ?? '—'}/10</span>
                                   </div>
-                                  <div className="p-2 bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                                  <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
                                     <span className="text-[#7A7875] dark:text-slate-400 block text-[10px]">Tech Depth</span>
                                     <span className="font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.technical_depth_score ?? pq.technicalDepthScore ?? '—'}/10</span>
                                   </div>
-                                  <div className="p-2 bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                                  <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
                                     <span className="text-[#7A7875] dark:text-slate-400 block text-[10px]">Edge Cases</span>
                                     <span className="font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.edge_cases_score ?? pq.edgeCasesScore ?? '—'}/10</span>
                                   </div>
-                                  <div className="p-2 bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                                  <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
                                     <span className="text-[#7A7875] dark:text-slate-400 block text-[10px]">Communication</span>
                                     <span className="font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.communication_score ?? pq.communicationScore ?? '—'}/10</span>
                                   </div>
@@ -969,13 +966,13 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                                 </span>
                                 <div className="space-y-2.5">
                                   {(pq.follow_ups || []).map((fu) => (
-                                    <div key={fu.id} className="p-3.5 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 text-xs space-y-2">
+                                    <div key={fu.id} className="p-3.5 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 text-xs space-y-2 shadow-2xs">
                                       <div className="flex items-center gap-2 text-[#3A0F34] dark:text-[#EAAA00] font-semibold">
                                         <MessageSquare className="h-3.5 w-3.5 text-[#EAAA00]" />
                                         <span>Follow-up #{fu.follow_up_number || fu.followUpNumber}: {fu.question_text || fu.questionText}</span>
                                       </div>
                                       {(fu.candidate_answer || fu.candidateAnswer) ? (
-                                        <div className="p-2.5 bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#222222] dark:text-[#F8F6F1] font-mono text-[11px] whitespace-pre-wrap">
+                                        <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#222222] dark:text-[#F8F6F1] font-mono text-[11px] whitespace-pre-wrap">
                                           {fu.candidate_answer || fu.candidateAnswer}
                                         </div>
                                       ) : (
@@ -995,11 +992,11 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               </div>
 
               {/* Bottom Actions Bar */}
-              <div className="p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#FAF8F5]/60 dark:bg-[#120516]">
+              <div className="p-6 sm:p-8 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-[#16061D] shadow-xs">
                 <button
                   onClick={() => fetchReport(true)}
                   disabled={isRefreshing}
-                  className="px-5 py-2.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] text-[#111111] dark:text-[#F8F6F1] text-xs font-mono font-semibold transition flex items-center gap-2 cursor-pointer hover:bg-[#FAF8F5] dark:hover:bg-[#250C3D] disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] text-[#111111] dark:text-[#F8F6F1] text-xs font-mono font-semibold transition flex items-center gap-2 cursor-pointer hover:bg-[#FAF8F5] dark:hover:bg-[#250C3D] disabled:opacity-50 shadow-xs"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00] ${isRefreshing ? 'animate-spin' : ''}`} />
                   <span>Re-synthesize / Refresh Dossier</span>
@@ -1008,7 +1005,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 <button
                   onClick={onEndSession}
                   id="return-landing-button"
-                  className="w-full sm:w-auto px-7 py-3 font-mono font-bold text-xs uppercase tracking-wider bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] border border-[#3A0F34] dark:border-[#EAAA00] transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  className="w-full sm:w-auto px-7 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow-md hover:scale-[1.02]"
                 >
                   <span>Return to Studio Console</span>
                   <ArrowRight className="h-4 w-4 text-[#EAAA00] dark:text-[#120516]" />
@@ -1029,7 +1026,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={onEndSession}
-              className="inline-flex items-center gap-1.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] px-3 py-1.5 text-xs font-mono font-semibold text-[#111111] dark:text-[#F8F6F1] hover:bg-[#F0EDE6] dark:hover:bg-[#34114F] transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] px-3.5 py-2 text-xs font-mono font-semibold text-[#111111] dark:text-[#F8F6F1] hover:bg-[#F0EDE6] dark:hover:bg-[#34114F] transition-all cursor-pointer shadow-2xs hover:shadow-xs"
             >
               <ArrowLeft className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
               <span>Exit Interview</span>
@@ -1042,13 +1039,13 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               <span className="font-didone font-bold text-[#111111] dark:text-[#F8F6F1] text-base">
                 {config?.role || 'Technical Interview'}
               </span>
-              <span className="px-2.5 py-0.5 text-xs font-mono font-semibold bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516]">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] shadow-2xs">
                 {config?.difficulty || q?.difficulty || 'Senior'}
               </span>
-              <span className="px-2.5 py-0.5 text-xs font-mono font-semibold bg-white dark:bg-[#250C3D] text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34]">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-white dark:bg-[#250C3D] text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34]">
                 {config?.primaryLanguage || 'Python'}
               </span>
-              <span className="font-mono text-xs text-[#7A7875] dark:text-slate-400 bg-white dark:bg-[#250C3D] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">
+              <span className="font-mono text-xs text-[#7A7875] dark:text-slate-400 bg-white dark:bg-[#250C3D] px-2.5 py-1 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34]">
                 {sessionId}
               </span>
             </div>
@@ -1056,7 +1053,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
 
           {/* Live Status & Progress */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1 border border-[#EAAA00]/40 bg-[#EAAA00]/15 text-[#8A6500] dark:text-[#EAAA00] text-xs font-mono">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#EAAA00]/40 bg-[#EAAA00]/15 text-[#8A6500] dark:text-[#EAAA00] text-xs font-mono shadow-2xs">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EAAA00] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#EAAA00]"></span>
@@ -1064,16 +1061,16 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               <span>LIVE ROUND • IN PROGRESS</span>
             </div>
 
-            <div className="px-3 py-1 bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-xs font-mono font-bold text-[#111111] dark:text-[#F8F6F1] tabular-nums">
+            <div className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-xs font-mono font-bold text-[#111111] dark:text-[#F8F6F1] tabular-nums shadow-2xs">
               Question {qNum} of {totalQuestions}
             </div>
           </div>
         </div>
 
         {/* Dynamic Progress Stepper Line */}
-        <div className="w-full h-1 bg-[#E5DFD5] dark:bg-[#250C3D] overflow-hidden">
+        <div className="w-full h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] overflow-hidden">
           <div
-            className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] transition-all duration-700"
+            className="h-full bg-gradient-to-r from-[#3A0F34] to-[#EAAA00] transition-all duration-700"
             style={{ width: `${Math.min(100, (qNum / totalQuestions) * 100)}%` }}
           />
         </div>
@@ -1084,7 +1081,6 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
           <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col gap-6 bg-[#F8F6F1]/70 dark:bg-[#120516]">
             {/* Question Specimen Block */}
             <div className="relative">
-              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
               <div className="flex items-center gap-2 text-[10px] font-mono font-bold tracking-[0.25em] text-[#3A0F34] dark:text-[#EAAA00] uppercase mb-2">
                 <Cpu className="h-3.5 w-3.5 text-[#EAAA00]" />
                 <span>CHALLENGE SPECIMEN • QUESTION {qNum} OF {totalQuestions}</span>
@@ -1095,7 +1091,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               </h2>
 
               {/* Problem Statement Box */}
-              <div className="p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] text-[#222222] dark:text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-line font-sans mb-6">
+              <div className="p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] text-[#222222] dark:text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-line font-sans mb-6 shadow-xs">
                 {q?.question_text || q?.questionText}
               </div>
 
@@ -1110,7 +1106,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                     {expectedConcepts.map((concept, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-mono bg-white dark:bg-[#16061D] text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34]"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-white dark:bg-[#16061D] text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs"
                       >
                         <CheckCircle2 className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00]" />
                         <span>{concept}</span>
@@ -1137,7 +1133,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
             )}
 
             {/* Safety & Evaluation Notice */}
-            <div className="p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#16061D] text-xs text-[#555555] dark:text-slate-300 flex items-start gap-3 mt-auto">
+            <div className="p-4 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#16061D] text-xs text-[#555555] dark:text-slate-300 flex items-start gap-3 mt-auto shadow-2xs">
               <ShieldCheck className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
               <div>
                 <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">Non-Execution Safety Policy: </span>
@@ -1150,7 +1146,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
           <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col gap-6 bg-[#FAF8F5]/80 dark:bg-[#140718]">
             {/* Starter Code Block */}
             {starterCode ? (
-              <div className="border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] overflow-hidden flex flex-col">
+              <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] overflow-hidden flex flex-col shadow-xs">
                 <div className="flex items-center justify-between px-4 py-2.5 bg-[#FAF8F5] dark:bg-[#16061D] border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
                   <div className="flex items-center gap-2 text-xs font-mono text-[#111111] dark:text-[#F8F6F1]">
                     <Terminal className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
@@ -1158,7 +1154,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                   </div>
                   <button
                     onClick={handleCopyCode}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-[#250C3D] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] text-[11px] font-mono font-semibold text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34] transition cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-[#250C3D] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] text-[11px] font-mono font-semibold text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34] transition cursor-pointer shadow-2xs"
                     title="Copy starter code to clipboard"
                   >
                     {copied ? (
@@ -1182,22 +1178,20 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] text-center text-xs text-[#7A7875] dark:text-slate-400 font-mono">
+              <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] text-center text-xs text-[#7A7875] dark:text-slate-400 font-mono shadow-xs">
                 <Code2 className="h-5 w-5 text-[#7A7875] dark:text-slate-400 mx-auto mb-1.5" />
                 <span>Conceptual System Design Challenge (No code stub required).</span>
               </div>
             )}
 
             {/* Candidate Primary Answer Workspace */}
-            <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-4">
-              <div className="editorial-crosshair -top-2 -right-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-
+            <div className="relative p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00]" />
                   <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Candidate Solution</h3>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-[#FAF8F5] dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#EAAA00] font-semibold">
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#EAAA00] font-semibold">
                   Q#{qNum} of {totalQuestions}
                 </span>
               </div>
@@ -1214,7 +1208,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                   disabled={isSubmitting || isEvaluating}
                   placeholder="Explain your approach, design considerations, trade-offs, and paste or type your code solution..."
                   rows={8}
-                  className="w-full rounded-none border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] p-4 font-mono text-xs sm:text-sm text-[#111111] dark:text-[#F8F6F1] placeholder-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none transition disabled:opacity-50 min-h-[160px]"
+                  className="w-full rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] p-4 font-mono text-xs sm:text-sm text-[#111111] dark:text-[#F8F6F1] placeholder-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:ring-2 focus:ring-[#3A0F34]/20 dark:focus:ring-[#EAAA00]/20 focus:outline-none transition disabled:opacity-50 min-h-[160px] shadow-2xs"
                 />
 
                 <div className="flex items-center justify-between gap-3 pt-1">
@@ -1226,10 +1220,10 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                     type="submit"
                     id="submit-answer-button"
                     disabled={isSubmitting || !isAnswerValid || isEvaluating}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 font-mono text-xs uppercase tracking-wider font-bold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all duration-200 cursor-pointer ${
                       isSubmitting || !isAnswerValid || isEvaluating
                         ? 'bg-[#E5DFD5] dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-500 cursor-not-allowed border border-[#E5DFD5] dark:border-[#3A0F34]'
-                        : 'bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] border border-[#3A0F34] dark:border-[#EAAA00]'
+                        : 'bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] shadow-xs hover:shadow-md hover:scale-[1.02]'
                     }`}
                   >
                     {isSubmitting ? (
@@ -1251,7 +1245,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               {submissionState.status === 'error' && (
                 <div
                   id="answer-error-banner"
-                  className="p-3 border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-2.5 animate-fadeIn"
+                  className="p-3.5 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-2.5 animate-fadeIn shadow-2xs"
                 >
                   <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
@@ -1265,7 +1259,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               {submissionState.status === 'submitted' && submissionState.response && (
                 <div
                   id="answer-success-banner"
-                  className="p-4 border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-xs text-[#222222] dark:text-[#F8F6F1] flex flex-col gap-3 animate-fadeIn"
+                  className="p-4 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-xs text-[#222222] dark:text-[#F8F6F1] flex flex-col gap-3 animate-fadeIn shadow-2xs"
                 >
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
@@ -1293,10 +1287,10 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                       id="request-evaluation-button"
                       onClick={handleRequestEvaluation}
                       disabled={isEvaluating}
-                      className={`inline-flex items-center justify-center gap-2 px-4 py-2 font-mono text-xs uppercase tracking-wider font-bold transition cursor-pointer ${
+                      className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer ${
                         isEvaluating
                           ? 'bg-[#E5DFD5] dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-500 cursor-not-allowed border border-[#E5DFD5] dark:border-[#3A0F34]'
-                          : 'bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] border border-[#3A0F34] dark:border-[#EAAA00]'
+                          : 'bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] border border-[#3A0F34] dark:border-[#EAAA00] shadow-2xs hover:shadow-xs'
                       }`}
                     >
                       {isEvaluating ? (
@@ -1319,7 +1313,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               {evaluationState.status === 'error' && (
                 <div
                   id="evaluation-error-banner"
-                  className="p-4 border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5 animate-fadeIn"
+                  className="p-4 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5 animate-fadeIn shadow-2xs"
                 >
                   <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div className="space-y-0.5 flex-1">
@@ -1333,7 +1327,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               {evaluationState.status === 'evaluated' && evalData && (
                 <div
                   id="evaluation-report-card"
-                  className="p-5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] flex flex-col gap-4 animate-fadeIn"
+                  className="p-5 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] flex flex-col gap-4 animate-fadeIn shadow-xs"
                 >
                   <div className="flex items-center justify-between pb-3 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
                     <div>
@@ -1347,49 +1341,49 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
 
                   {/* Dimension breakdown */}
                   <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                    <div className="p-2.5 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                      <div className="flex justify-between mb-1">
+                    <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs">
+                      <div className="flex justify-between mb-1.5">
                         <span className="text-[#111111] dark:text-[#F8F6F1]">Correctness (40%)</span>
                         <span className="font-bold text-[#3A0F34] dark:text-[#EAAA00]">{evalData.scores.correctness}/10</span>
                       </div>
-                      <div className="h-1 bg-[#E5DFD5] dark:bg-[#250C3D]">
-                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: `${Math.min(100, evalData.scores.correctness * 10)}%` }} />
+                      <div className="h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: `${Math.min(100, evalData.scores.correctness * 10)}%` }} />
                       </div>
                     </div>
 
-                    <div className="p-2.5 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                      <div className="flex justify-between mb-1">
+                    <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs">
+                      <div className="flex justify-between mb-1.5">
                         <span className="text-[#111111] dark:text-[#F8F6F1]">Depth (25%)</span>
                         <span className="font-bold text-[#3A0F34] dark:text-[#EAAA00]">{evalData.scores.technical_depth ?? evalData.scores.technicalDepth}/10</span>
                       </div>
-                      <div className="h-1 bg-[#E5DFD5] dark:bg-[#250C3D]">
-                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: `${Math.min(100, (evalData.scores.technical_depth ?? evalData.scores.technicalDepth ?? 0) * 10)}%` }} />
+                      <div className="h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: `${Math.min(100, (evalData.scores.technical_depth ?? evalData.scores.technicalDepth ?? 0) * 10)}%` }} />
                       </div>
                     </div>
 
-                    <div className="p-2.5 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                      <div className="flex justify-between mb-1">
+                    <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs">
+                      <div className="flex justify-between mb-1.5">
                         <span className="text-[#111111] dark:text-[#F8F6F1]">Edge Cases (20%)</span>
                         <span className="font-bold text-[#3A0F34] dark:text-[#EAAA00]">{evalData.scores.edge_cases ?? evalData.scores.edgeCases}/10</span>
                       </div>
-                      <div className="h-1 bg-[#E5DFD5] dark:bg-[#250C3D]">
-                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: `${Math.min(100, (evalData.scores.edge_cases ?? evalData.scores.edgeCases ?? 0) * 10)}%` }} />
+                      <div className="h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: `${Math.min(100, (evalData.scores.edge_cases ?? evalData.scores.edgeCases ?? 0) * 10)}%` }} />
                       </div>
                     </div>
 
-                    <div className="p-2.5 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                      <div className="flex justify-between mb-1">
+                    <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs">
+                      <div className="flex justify-between mb-1.5">
                         <span className="text-[#111111] dark:text-[#F8F6F1]">Clarity (15%)</span>
                         <span className="font-bold text-[#3A0F34] dark:text-[#EAAA00]">{evalData.scores.communication}/10</span>
                       </div>
-                      <div className="h-1 bg-[#E5DFD5] dark:bg-[#250C3D]">
-                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: `${Math.min(100, evalData.scores.communication * 10)}%` }} />
+                      <div className="h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: `${Math.min(100, evalData.scores.communication * 10)}%` }} />
                       </div>
                     </div>
                   </div>
 
                   {/* Feedback summary */}
-                  <div className="p-3 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] text-xs font-sans text-[#333333] dark:text-slate-300 leading-relaxed">
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] text-xs font-sans text-[#333333] dark:text-slate-300 leading-relaxed shadow-2xs">
                     {evalData.feedback}
                   </div>
                 </div>
@@ -1399,7 +1393,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
             {/* Adaptive Follow-up Section */}
             <div
               id="follow-up-section"
-              className="p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-4 animate-fadeIn"
+              className="p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-4 animate-fadeIn shadow-xs"
             >
               <div className="flex items-center justify-between pb-3 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
                 <div className="flex items-center gap-2">
@@ -1409,14 +1403,14 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                   </h3>
                 </div>
                 {isMaxFollowUpsReached && (
-                  <span className="text-[10px] font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-[#3A0F34]/10 dark:bg-[#EAAA00]/20 px-2 py-0.5 border border-[#3A0F34]/20 dark:border-[#EAAA00]/40">
+                  <span className="text-[10px] font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-[#3A0F34]/10 dark:bg-[#EAAA00]/20 px-2.5 py-0.5 rounded-full border border-[#3A0F34]/20 dark:border-[#EAAA00]/40">
                     Max Reached
                   </span>
                 )}
               </div>
 
               {followUpError && (
-                <div className="p-3 border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 text-xs font-mono">
+                <div className="p-3 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 text-xs font-mono shadow-2xs">
                   {followUpError}
                 </div>
               )}
@@ -1430,7 +1424,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 const hasInput = currentAnswerInput.trim().length > 0;
 
                 return (
-                  <div key={fu.id} className="p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#FAF8F5] dark:bg-[#120516] space-y-3">
+                  <div key={fu.id} className="p-4 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#FAF8F5] dark:bg-[#120516] space-y-3 shadow-2xs">
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">
                         Follow-up #{fuNum}
@@ -1447,7 +1441,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                     </p>
 
                     {isAnswered ? (
-                      <div className="p-3 bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] font-mono text-xs text-[#111111] dark:text-[#F8F6F1] whitespace-pre-wrap">
+                      <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] font-mono text-xs text-[#111111] dark:text-[#F8F6F1] whitespace-pre-wrap">
                         {fu.candidate_answer || fu.candidateAnswer}
                       </div>
                     ) : (
@@ -1458,14 +1452,14 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                           onChange={(e) => setFollowUpInputs({ ...followUpInputs, [fu.id]: e.target.value })}
                           disabled={isSubmittingThis}
                           placeholder="Address follow-up inquiry..."
-                          className="w-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] p-3 font-mono text-xs text-[#111111] dark:text-[#F8F6F1] placeholder-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none"
+                          className="w-full rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] p-3 font-mono text-xs text-[#111111] dark:text-[#F8F6F1] placeholder-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none shadow-2xs"
                         />
                         <div className="flex justify-end">
                           <button
                             type="button"
                             onClick={() => handleSubmitFollowUpAnswer(fu.id)}
                             disabled={isSubmittingThis || !hasInput}
-                            className="px-4 py-2 bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs uppercase font-bold hover:bg-[#2A0B26] dark:hover:bg-[#D49800] transition disabled:opacity-50 cursor-pointer"
+                            className="px-4 py-2 rounded-xl bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs uppercase font-bold hover:bg-[#2A0B26] dark:hover:bg-[#D49800] transition disabled:opacity-50 cursor-pointer shadow-xs"
                           >
                             {isSubmittingThis ? 'Submitting...' : 'Submit Follow-up'}
                           </button>
@@ -1486,7 +1480,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                     type="button"
                     onClick={handleRequestFollowUp}
                     disabled={!canRequestFollowUp}
-                    className="px-4 py-2 border border-[#3A0F34] dark:border-[#EAAA00] bg-white dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#EAAA00] font-mono text-xs uppercase font-bold hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2 rounded-xl border border-[#3A0F34] dark:border-[#EAAA00] bg-white dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#EAAA00] font-mono text-xs uppercase font-bold hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition disabled:opacity-50 cursor-pointer shadow-2xs"
                   >
                     {isGeneratingFollowUp ? 'Generating...' : `Request Follow-up (${followUpCount + 1}/2)`}
                   </button>
@@ -1497,7 +1491,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
             {/* Question Progression Station */}
             <div
               id="question-progression-card"
-              className="p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-3"
+              className="p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-3 shadow-xs"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -1517,10 +1511,10 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                   id="advance-question-button"
                   onClick={handleAdvanceQuestion}
                   disabled={!canAdvance}
-                  className={`w-full py-3.5 font-mono text-xs uppercase tracking-wider font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`w-full py-3.5 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
                     !canAdvance
                       ? 'bg-[#E5DFD5] dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-500 cursor-not-allowed border border-[#E5DFD5] dark:border-[#3A0F34]'
-                      : 'bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] border border-[#3A0F34] dark:border-[#EAAA00]'
+                      : 'bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] shadow-xs hover:shadow-md hover:scale-[1.01]'
                   }`}
                 >
                   {progressionState.status === 'advancing' ? (

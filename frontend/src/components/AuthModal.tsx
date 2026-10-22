@@ -185,15 +185,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const containerContent = (
     <div
-      className={`relative w-full max-w-md bg-[#FAF8F5] dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xl p-6 sm:p-8 transition-colors text-[#111111] dark:text-[#F8F6F1] ${
+      className={`relative w-full max-w-md bg-[#FAF8F5] dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xl p-6 sm:p-8 transition-colors text-[#111111] dark:text-[#F8F6F1] rounded-3xl ${
         isStandalonePage ? 'mx-auto my-8' : ''
       }`}
     >
-      <div className="editorial-crosshair -top-2.5 -left-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-      <div className="editorial-crosshair -top-2.5 -right-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-      <div className="editorial-crosshair -bottom-2.5 -left-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-      <div className="editorial-crosshair -bottom-2.5 -right-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-
       {/* Header */}
       <div className="flex items-center justify-between pb-5 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
         <div>
@@ -214,7 +209,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 border border-[#E5DFD5] dark:border-[#3A0F34] text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D] transition cursor-pointer"
+            className="p-2 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D] transition cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />
@@ -226,7 +221,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       {errorMessage && (
         <div
           role="alert"
-          className="mt-4 p-3 border border-rose-200 dark:border-rose-900 bg-rose-50/80 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5 animate-fadeIn font-mono"
+          className="mt-4 p-3 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50/80 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5 animate-fadeIn font-mono"
         >
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
           <div>{errorMessage}</div>
@@ -260,7 +255,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Jane Developer"
-                className="w-full pl-9 pr-3.5 py-2 text-sm border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#3A0F34] dark:focus:ring-[#EAAA00] focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition font-sans"
+                className="w-full pl-9 pr-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3A0F34]/15 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition font-sans shadow-2xs"
               />
             </div>
           </div>
@@ -281,7 +276,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="candidate@company.com"
-                className="w-full pl-9 pr-3.5 py-2 text-sm border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#3A0F34] dark:focus:ring-[#EAAA00] focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition font-sans"
+                className="w-full pl-9 pr-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3A0F34]/15 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition font-sans shadow-2xs"
               />
             </div>
           </div>
@@ -302,7 +297,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
                 placeholder="Paste reset token here"
-                className="w-full pl-9 pr-3.5 py-2 font-mono text-xs border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#3A0F34] dark:focus:ring-[#EAAA00] focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition"
+                className="w-full pl-9 pr-3.5 py-2.5 font-mono text-xs rounded-xl border border-slate-300 dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3A0F34]/15 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition shadow-2xs"
               />
             </div>
           </div>
@@ -334,7 +329,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === 'signup' ? 'Minimum 8 characters' : 'Enter your password'}
-                className="w-full pl-9 pr-10 py-2 text-sm border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#3A0F34] dark:focus:ring-[#EAAA00] focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition font-sans"
+                className="w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3A0F34]/15 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition font-sans shadow-2xs"
               />
               <button
                 type="button"
@@ -353,11 +348,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span className="text-[#7A7875] dark:text-slate-400">Password strength:</span>
                   <span className="font-semibold text-[#3A0F34] dark:text-[#EAAA00]">{strength.label}</span>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5 h-1">
-                  <div className={`transition-colors ${strength.score >= 1 ? strength.color : 'bg-[#EBE8E0] dark:bg-[#250C3D]'}`} />
-                  <div className={`transition-colors ${strength.score >= 2 ? strength.color : 'bg-[#EBE8E0] dark:bg-[#250C3D]'}`} />
-                  <div className={`transition-colors ${strength.score >= 3 ? strength.color : 'bg-[#EBE8E0] dark:bg-[#250C3D]'}`} />
-                  <div className={`transition-colors ${strength.score >= 4 ? strength.color : 'bg-[#EBE8E0] dark:bg-[#250C3D]'}`} />
+                <div className="grid grid-cols-4 gap-1.5 h-1.5">
+                  <div className={`rounded-full transition-colors ${strength.score >= 1 ? strength.color : 'bg-[#EBE8E0] dark:bg-[#250C3D]'}`} />
+                  <div className={`rounded-full transition-colors ${strength.score >= 2 ? strength.color : 'bg-[#EBE8E0] dark:bg-[#250C3D]'}`} />
+                  <div className={`rounded-full transition-colors ${strength.score >= 3 ? strength.color : 'bg-[#EBE8E0] dark:bg-[#250C3D]'}`} />
+                  <div className={`rounded-full transition-colors ${strength.score >= 4 ? strength.color : 'bg-[#EBE8E0] dark:bg-[#250C3D]'}`} />
                 </div>
               </div>
             )}
@@ -379,7 +374,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-type password"
-                className="w-full pl-9 pr-10 py-2 text-sm border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#3A0F34] dark:focus:ring-[#EAAA00] focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition font-sans"
+                className="w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3A0F34]/15 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] transition font-sans shadow-2xs"
               />
               <button
                 type="button"
@@ -397,7 +392,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full mt-2 inline-flex items-center justify-center gap-2 border border-[#3A0F34] dark:border-[#EAAA00] bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] px-4 py-2.5 text-xs font-mono font-bold uppercase tracking-wider shadow-xs hover:bg-[#2A0B26] dark:hover:bg-[#D49800] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#3A0F34] to-[#55164D] hover:from-[#2E0B29] hover:to-[#45103E] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] text-white dark:text-[#120516] px-5 py-3 text-xs font-mono font-bold uppercase tracking-wider shadow-xs hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {isSubmitting ? (
             <>

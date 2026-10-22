@@ -41,7 +41,7 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
               <button
                 type="button"
                 onClick={onBackToConsole}
-                className="inline-flex items-center gap-1.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] px-3 py-1.5 text-xs font-mono font-semibold text-[#111111] dark:text-[#F8F6F1] hover:bg-[#F0EDE6] dark:hover:bg-[#34114F] transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] px-3.5 py-1.5 rounded-xl text-xs font-mono font-semibold text-[#111111] dark:text-[#F8F6F1] shadow-2xs hover:bg-[#F0EDE6] dark:hover:bg-[#34114F] hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
               >
                 <ArrowLeft className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
                 <span>Return to Studio Console</span>
@@ -54,14 +54,14 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
 
             {/* Section Switcher Pills */}
             {onSelectSection && (
-              <div className="flex flex-wrap items-center gap-1 text-xs font-mono">
+              <div className="flex flex-wrap items-center gap-1 text-xs font-mono bg-[#EFECE6]/70 dark:bg-[#120516]/80 p-1 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34]/40">
                 <button
                   type="button"
                   onClick={() => onSelectSection('rubric')}
-                  className={`px-3 py-1 border transition cursor-pointer ${
+                  className={`px-3 py-1 rounded-full border transition cursor-pointer ${
                     activeSection === 'rubric'
-                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold'
-                      : 'bg-white text-[#555555] border-[#E5DFD5] dark:bg-[#16061D] dark:text-slate-300 dark:border-[#3A0F34] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold shadow-xs'
+                      : 'bg-transparent text-[#555555] border-transparent dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1]'
                   }`}
                 >
                   Rubric
@@ -69,10 +69,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectSection('workflow')}
-                  className={`px-3 py-1 border transition cursor-pointer ${
+                  className={`px-3 py-1 rounded-full border transition cursor-pointer ${
                     activeSection === 'workflow'
-                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold'
-                      : 'bg-white text-[#555555] border-[#E5DFD5] dark:bg-[#16061D] dark:text-slate-300 dark:border-[#3A0F34] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold shadow-xs'
+                      : 'bg-transparent text-[#555555] border-transparent dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1]'
                   }`}
                 >
                   Workflow
@@ -80,10 +80,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectSection('sample-report')}
-                  className={`px-3 py-1 border transition cursor-pointer ${
+                  className={`px-3 py-1 rounded-full border transition cursor-pointer ${
                     activeSection === 'sample-report'
-                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold'
-                      : 'bg-white text-[#555555] border-[#E5DFD5] dark:bg-[#16061D] dark:text-slate-300 dark:border-[#3A0F34] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold shadow-xs'
+                      : 'bg-transparent text-[#555555] border-transparent dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1]'
                   }`}
                 >
                   Sample Report
@@ -91,10 +91,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectSection('architecture')}
-                  className={`px-3 py-1 border transition cursor-pointer ${
+                  className={`px-3 py-1 rounded-full border transition cursor-pointer ${
                     activeSection === 'architecture'
-                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold'
-                      : 'bg-white text-[#555555] border-[#E5DFD5] dark:bg-[#16061D] dark:text-slate-300 dark:border-[#3A0F34] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold shadow-xs'
+                      : 'bg-transparent text-[#555555] border-transparent dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1]'
                   }`}
                 >
                   Architecture
@@ -102,10 +102,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectSection('all')}
-                  className={`px-3 py-1 border transition cursor-pointer ${
+                  className={`px-3 py-1 rounded-full border transition cursor-pointer ${
                     activeSection === 'all'
-                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold'
-                      : 'bg-white text-[#555555] border-[#E5DFD5] dark:bg-[#16061D] dark:text-slate-300 dark:border-[#3A0F34] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold shadow-xs'
+                      : 'bg-transparent text-[#555555] border-transparent dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1]'
                   }`}
                 >
                   All Specs
@@ -132,89 +132,89 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Step 1 */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs flex flex-col justify-between rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs flex flex-col justify-between rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 group">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold">
+                    <span className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold rounded-xl shadow-2xs">
                       01
                     </span>
-                    <span className="px-2 py-0.5 text-[9px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                    <span className="px-2.5 py-0.5 text-[9px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full">
                       Schema Validated
                     </span>
                   </div>
-                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Session Configuration</h3>
+                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1] group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] transition-colors">Session Configuration</h3>
                   <p className="mt-2 text-xs text-[#555555] dark:text-slate-300 leading-relaxed font-sans">
                     Select your engineering domain, seniority level (Junior to Staff), language (Python, Java, SQL), and question count (3–10 challenges). Inputs strictly validated.
                   </p>
                 </div>
-                <div className="mt-6 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
+                <div className="mt-6 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono text-[#7A7875] dark:text-slate-400 bg-white/40 dark:bg-black/20 px-2.5 py-1 rounded-lg">
                   POST /api/v1/interviews/config
                 </div>
               </div>
 
               {/* Step 2 */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs flex flex-col justify-between rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs flex flex-col justify-between rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 group">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold">
+                    <span className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold rounded-xl shadow-2xs">
                       02
                     </span>
-                    <span className="px-2 py-0.5 text-[9px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                    <span className="px-2.5 py-0.5 text-[9px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full">
                       Primary Challenge
                     </span>
                   </div>
-                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Technical Formulation</h3>
+                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1] group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] transition-colors">Technical Formulation</h3>
                   <p className="mt-2 text-xs text-[#555555] dark:text-slate-300 leading-relaxed font-sans">
                     Receive an algorithmic or architectural question with starter code stub. Submit solutions via code or text. Reviewed via static AST analysis—never executed.
                   </p>
                 </div>
-                <div className="mt-6 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
+                <div className="mt-6 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono text-[#7A7875] dark:text-slate-400 bg-white/40 dark:bg-black/20 px-2.5 py-1 rounded-lg">
                   POST /api/v1/interviews/{'{id}'}/answers
                 </div>
               </div>
 
               {/* Step 3 */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs flex flex-col justify-between rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs flex flex-col justify-between rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 group">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold">
+                    <span className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold rounded-xl shadow-2xs">
                       03
                     </span>
-                    <span className="px-2 py-0.5 text-[9px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                    <span className="px-2.5 py-0.5 text-[9px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full">
                       Max 2 Follow-Ups
                     </span>
                   </div>
-                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Adaptive Drill-Downs</h3>
+                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1] group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] transition-colors">Adaptive Drill-Downs</h3>
                   <p className="mt-2 text-xs text-[#555555] dark:text-slate-300 leading-relaxed font-sans">
                     If Gemini identifies missing concepts, concurrency hazards, or scale oversights, it dynamically generates up to 2 targeted follow-ups before advancing.
                   </p>
                 </div>
-                <div className="mt-6 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
+                <div className="mt-6 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono text-[#7A7875] dark:text-slate-400 bg-white/40 dark:bg-black/20 px-2.5 py-1 rounded-lg">
                   POST /api/v1/interviews/{'{id}'}/follow-up
                 </div>
               </div>
 
               {/* Step 4 */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs flex flex-col justify-between rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs flex flex-col justify-between rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 group">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold">
+                    <span className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold rounded-xl shadow-2xs">
                       04
                     </span>
-                    <span className="px-2 py-0.5 text-[9px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                    <span className="px-2.5 py-0.5 text-[9px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full">
                       Synthesized Report
                     </span>
                   </div>
-                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Four-Dimension Scoring</h3>
+                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1] group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] transition-colors">Four-Dimension Scoring</h3>
                   <p className="mt-2 text-xs text-[#555555] dark:text-slate-300 leading-relaxed font-sans">
                     The backend computes authoritative weighted scores across all challenges, aggregates recurring strengths and omissions, and generates an executive dossier.
                   </p>
                 </div>
-                <div className="mt-6 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
+                <div className="mt-6 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono text-[#7A7875] dark:text-slate-400 bg-white/40 dark:bg-black/20 px-2.5 py-1 rounded-lg">
                   GET /api/v1/interviews/{'{id}'}/report
                 </div>
               </div>
@@ -235,20 +235,20 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
               <p className="mt-3 text-xs sm:text-sm text-[#555555] dark:text-slate-300 leading-relaxed font-sans max-w-2xl">
                 Every candidate submission is graded on a calibrated 0.0 to 10.0 scale across four distinct criteria. The authoritative score is calculated directly on the backend:
               </p>
-              <div className="mt-4 inline-block border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] px-4 py-2 font-mono text-xs font-semibold text-[#3A0F34] dark:text-[#EAAA00]">
+              <div className="mt-4 inline-block border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] px-4 py-2.5 rounded-xl shadow-2xs font-mono text-xs font-semibold text-[#3A0F34] dark:text-[#EAAA00]">
                 Overall Score = (Correctness × 0.40) + (Depth × 0.25) + (Edge Cases × 0.20) + (Communication × 0.15)
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Dimension 1: Correctness */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <div className="p-2.5 bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs">
                     <Target className="h-4 w-4" />
                   </div>
-                  <span className="px-2 py-0.5 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <span className="px-2.5 py-0.5 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full">
                     40% Weight
                   </span>
                 </div>
@@ -273,13 +273,13 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
               </div>
 
               {/* Dimension 2: Architectural Depth */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <div className="p-2.5 bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs">
                     <Layers className="h-4 w-4" />
                   </div>
-                  <span className="px-2 py-0.5 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <span className="px-2.5 py-0.5 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full">
                     25% Weight
                   </span>
                 </div>
@@ -304,13 +304,13 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
               </div>
 
               {/* Dimension 3: Edge-Case Awareness */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <div className="p-2.5 bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs">
                     <AlertTriangle className="h-4 w-4 text-[#EAAA00]" />
                   </div>
-                  <span className="px-2 py-0.5 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <span className="px-2.5 py-0.5 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full">
                     20% Weight
                   </span>
                 </div>
@@ -335,13 +335,13 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
               </div>
 
               {/* Dimension 4: Communication & Clarity */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <div className="p-2.5 bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs">
                     <MessageSquare className="h-4 w-4" />
                   </div>
-                  <span className="px-2 py-0.5 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <span className="px-2.5 py-0.5 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full">
                     15% Weight
                   </span>
                 </div>
@@ -382,10 +382,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Guarantee 1: Zero Execution */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-                <div className="flex h-8 w-8 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] mb-3">
-                  <ShieldAlert className="h-4 w-4" />
+                <div className="flex h-9 w-9 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs mb-3.5">
+                  <ShieldAlert className="h-4.5 w-4.5" />
                 </div>
                 <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Zero Execution Attack Surface</h3>
                 <p className="mt-2 text-xs text-[#555555] dark:text-slate-300 leading-relaxed font-sans">
@@ -394,10 +394,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
               </div>
 
               {/* Guarantee 2: Rate Limiting & 429 Resilience */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-                <div className="flex h-8 w-8 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] mb-3">
-                  <Cpu className="h-4 w-4" />
+                <div className="flex h-9 w-9 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs mb-3.5">
+                  <Cpu className="h-4.5 w-4.5" />
                 </div>
                 <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">HTTP 429 Quota Backoff & Retries</h3>
                 <p className="mt-2 text-xs text-[#555555] dark:text-slate-300 leading-relaxed font-sans">
@@ -406,10 +406,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
               </div>
 
               {/* Guarantee 3: Offline Mock Parity */}
-              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-                <div className="flex h-8 w-8 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] mb-3">
-                  <CheckCircle2 className="h-4 w-4" />
+                <div className="flex h-9 w-9 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs mb-3.5">
+                  <CheckCircle2 className="h-4.5 w-4.5" />
                 </div>
                 <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Deterministic Offline Parity</h3>
                 <p className="mt-2 text-xs text-[#555555] dark:text-slate-300 leading-relaxed font-sans">
@@ -436,7 +436,7 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
             </div>
 
             {/* Sample Report Broadsheet */}
-            <div className="relative border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#F8F6F1]/80 dark:bg-[#16061D]/90 backdrop-blur-xs p-6 sm:p-10 rounded-none">
+            <div className="relative border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#F8F6F1]/80 dark:bg-[#16061D]/90 backdrop-blur-xs p-6 sm:p-10 rounded-3xl shadow-sm">
               <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
               <div className="editorial-crosshair -top-2 -right-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
               <div className="editorial-crosshair -bottom-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
@@ -446,10 +446,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 text-[9px] font-mono font-bold text-[#7A7875] dark:text-slate-300 bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] uppercase">
+                    <span className="px-2.5 py-0.5 text-[9px] font-mono font-bold text-[#7A7875] dark:text-slate-300 bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] uppercase rounded-full">
                       Sample Report Simulation
                     </span>
-                    <span className="px-2 py-0.5 text-[9px] font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-[#3A0F34]/10 dark:bg-[#EAAA00]/20 border border-[#3A0F34]/20 dark:border-[#EAAA00]/40">
+                    <span className="px-2.5 py-0.5 text-[9px] font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-[#3A0F34]/10 dark:bg-[#EAAA00]/20 border border-[#3A0F34]/20 dark:border-[#EAAA00]/40 rounded-full">
                       Senior • Python
                     </span>
                   </div>
@@ -467,7 +467,7 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                     <span className="font-didone text-4xl font-black text-[#111111] dark:text-[#F8F6F1] tracking-tight">8.6</span>
                     <span className="text-xs font-mono font-semibold text-[#7A7875] dark:text-slate-400">/ 10.0</span>
                   </div>
-                  <span className="inline-block bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] px-2.5 py-0.5 text-[10px] font-mono font-bold mt-1">
+                  <span className="inline-block bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] px-3 py-0.5 text-[10px] font-mono font-bold mt-1 rounded-full shadow-2xs">
                     Strong Pass
                   </span>
                 </div>
@@ -480,8 +480,8 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                     <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">Correctness <span className="font-mono text-[#7A7875] dark:text-slate-400 text-[10px]">(40%)</span></span>
                     <span className="font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00]">9.0</span>
                   </div>
-                  <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-1.5 rounded-none overflow-hidden">
-                    <div className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full" style={{ width: '90%' }}></div>
+                  <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#3A0F34] to-[#601a57] dark:from-[#EAAA00] dark:to-[#ffca36] h-full rounded-full transition-all duration-500" style={{ width: '90%' }}></div>
                   </div>
                 </div>
                 <div>
@@ -489,8 +489,8 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                     <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">Depth <span className="font-mono text-[#7A7875] dark:text-slate-400 text-[10px]">(25%)</span></span>
                     <span className="font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00]">8.5</span>
                   </div>
-                  <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-1.5 rounded-none overflow-hidden">
-                    <div className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full" style={{ width: '85%' }}></div>
+                  <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#3A0F34] to-[#601a57] dark:from-[#EAAA00] dark:to-[#ffca36] h-full rounded-full transition-all duration-500" style={{ width: '85%' }}></div>
                   </div>
                 </div>
                 <div>
@@ -498,8 +498,8 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                     <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">Edge Cases <span className="font-mono text-[#7A7875] dark:text-slate-400 text-[10px]">(20%)</span></span>
                     <span className="font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00]">8.0</span>
                   </div>
-                  <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-1.5 rounded-none overflow-hidden">
-                    <div className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full" style={{ width: '80%' }}></div>
+                  <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#3A0F34] to-[#601a57] dark:from-[#EAAA00] dark:to-[#ffca36] h-full rounded-full transition-all duration-500" style={{ width: '80%' }}></div>
                   </div>
                 </div>
                 <div>
@@ -507,8 +507,8 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                     <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">Clarity <span className="font-mono text-[#7A7875] dark:text-slate-400 text-[10px]">(15%)</span></span>
                     <span className="font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00]">8.8</span>
                   </div>
-                  <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-1.5 rounded-none overflow-hidden">
-                    <div className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full" style={{ width: '88%' }}></div>
+                  <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#3A0F34] to-[#601a57] dark:from-[#EAAA00] dark:to-[#ffca36] h-full rounded-full transition-all duration-500" style={{ width: '88%' }}></div>
                   </div>
                 </div>
               </div>
@@ -590,11 +590,11 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Pillar 1 */}
-              <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold tracking-wider text-[#7A7875] dark:text-slate-400 uppercase font-mono">01 / Runtime</span>
-                  <div className="flex h-7 w-7 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <div className="flex h-8 w-8 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs">
                     <Server className="h-3.5 w-3.5" />
                   </div>
                 </div>
@@ -603,18 +603,18 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                   FastAPI async REST services with strict Pydantic v2 validation, sub-50ms schema verification, and isolated static evaluation guards.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-1.5 text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">FastAPI</span>
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">AsyncIO</span>
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">Pydantic v2</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">FastAPI</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">AsyncIO</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">Pydantic v2</span>
                 </div>
               </div>
 
               {/* Pillar 2 */}
-              <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold tracking-wider text-[#7A7875] dark:text-slate-400 uppercase font-mono">02 / State Engine</span>
-                  <div className="flex h-7 w-7 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <div className="flex h-8 w-8 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs">
                     <Zap className="h-3.5 w-3.5" />
                   </div>
                 </div>
@@ -623,18 +623,18 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                   Strict server-side finite state transitions across 4 session phases (Configured → In-Progress → Evaluation → Completed) to eliminate tampering.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-1.5 text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">Anti-Tamper</span>
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">UUID v4</span>
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">FSM</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">Anti-Tamper</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">UUID v4</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">FSM</span>
                 </div>
               </div>
 
               {/* Pillar 3 */}
-              <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold tracking-wider text-[#7A7875] dark:text-slate-400 uppercase font-mono">03 / Intelligence</span>
-                  <div className="flex h-7 w-7 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <div className="flex h-8 w-8 items-center justify-center bg-white dark:bg-[#120516] text-[#3A0F34] dark:text-[#EAAA00] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl shadow-2xs">
                     <Cpu className="h-3.5 w-3.5" />
                   </div>
                 </div>
@@ -643,18 +643,18 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                   Gemini 2.5 Flash evaluation paired with an offline calibrated catalog, automated 429 quota backoff, and zero-execution code review.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-1.5 text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">Gemini 2.5</span>
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">Quota Backoff</span>
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">Offline Catalog</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">Gemini 2.5</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">Quota Backoff</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">Offline Catalog</span>
                 </div>
               </div>
 
               {/* Pillar 4 */}
-              <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-none">
+              <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/75 dark:bg-[#16061D]/80 backdrop-blur-xs rounded-2xl shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                 <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold tracking-wider text-[#3A0F34] dark:text-[#EAAA00] uppercase font-mono">04 / Data Store</span>
-                  <div className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516]">
+                  <div className="flex h-8 w-8 items-center justify-center bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] rounded-xl shadow-2xs">
                     <Database className="h-3.5 w-3.5" />
                   </div>
                 </div>
@@ -663,19 +663,19 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
                   PostgreSQL relational data tier with SQLAlchemy 2.0 ORM, Alembic schema migrations, and granular 4-dimension performance telemetry.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-1.5 text-[10px] font-mono text-[#3A0F34] dark:text-[#EAAA00]">
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">PostgreSQL</span>
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">SQLAlchemy 2.0</span>
-                  <span className="bg-white dark:bg-[#120516] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34]">Alembic</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">PostgreSQL</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">SQLAlchemy 2.0</span>
+                  <span className="bg-white dark:bg-[#120516] px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-full shadow-2xs">Alembic</span>
                 </div>
               </div>
             </div>
 
             {/* System Status Datum Bar */}
-            <div className="mt-8 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] p-4 text-[#111111] dark:text-[#F8F6F1]">
+            <div className="mt-8 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] p-4 text-[#111111] dark:text-[#F8F6F1] rounded-2xl shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3 text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-[#EAAA00]"></span>
+                    <span className="h-2 w-2 rounded-full bg-[#EAAA00] animate-pulse"></span>
                     <span className="font-semibold text-[#111111] dark:text-[#F8F6F1] font-mono">SYSTEM READY</span>
                   </div>
                   <span className="hidden sm:inline text-[#E5DFD5] dark:text-[#3A0F34]">|</span>

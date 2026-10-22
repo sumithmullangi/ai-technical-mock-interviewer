@@ -580,8 +580,8 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[10px] font-mono tracking-widest uppercase text-[#3A0F34] dark:text-[#EAAA00] mb-3">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[10px] font-mono tracking-widest uppercase text-[#3A0F34] dark:text-[#EAAA00] mb-3 shadow-xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00] animate-pulse"></span>
                 <span>CURATED TECHNICAL CHALLENGES</span>
               </div>
               <h1 className="font-didone text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#111111] dark:text-[#F8F6F1] leading-[1.05]">
@@ -597,7 +597,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                 <button
                   type="button"
                   onClick={onSwitchToStudio}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition cursor-pointer font-semibold uppercase tracking-wider text-[11px]"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition-all cursor-pointer font-semibold uppercase tracking-wider text-[11px] shadow-xs hover:shadow-sm"
                 >
                   <span>Open Studio Console</span>
                   <ArrowRight className="h-3 w-3 text-[#EAAA00]" />
@@ -611,7 +611,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
         {errorMessage && (
           <div
             role="alert"
-            className="px-4 sm:px-8 py-3.5 border-b border-rose-300 dark:border-rose-900 bg-rose-50/90 dark:bg-rose-950/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-3"
+            className="mx-4 sm:mx-8 my-4 p-4 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50/90 dark:bg-rose-950/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-3 shadow-xs"
           >
             <ShieldAlert className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             <div className="flex-1 font-sans">
@@ -632,18 +632,18 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#7A7875] dark:text-slate-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#7A7875] dark:text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search challenges (e.g. Lua, Raft, Backpressure, Mutex)..."
-                className="w-full pl-9 pr-3.5 py-2 text-xs font-mono border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none rounded-none"
+                className="w-full pl-9 pr-3.5 py-2.5 text-xs font-mono border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none rounded-xl transition-all shadow-2xs"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1]"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -653,7 +653,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
             {/* Filter Pills */}
             <div className="flex flex-wrap items-center gap-2">
               {/* Domain Filter */}
-              <div className="flex items-center border border-[#E5DFD5] dark:border-[#3A0F34] divide-x divide-[#E5DFD5] dark:divide-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[11px] font-mono">
+              <div className="flex items-center rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] divide-x divide-[#E5DFD5] dark:divide-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[11px] font-mono overflow-hidden shadow-2xs">
                 {[
                   { id: 'all', label: 'All Domains' },
                   { id: 'distributed', label: 'Distributed' },
@@ -665,7 +665,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-2.5 py-1.5 transition cursor-pointer uppercase ${
+                    className={`px-3 py-1.5 transition cursor-pointer uppercase ${
                       selectedCategory === cat.id
                         ? 'bg-[#3A0F34] text-white dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
                         : 'text-[#555555] dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D]'
@@ -677,7 +677,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
               </div>
 
               {/* Language Filter */}
-              <div className="flex items-center border border-[#E5DFD5] dark:border-[#3A0F34] divide-x divide-[#E5DFD5] dark:divide-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[11px] font-mono">
+              <div className="flex items-center rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] divide-x divide-[#E5DFD5] dark:divide-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[11px] font-mono overflow-hidden shadow-2xs">
                 {[
                   { id: 'all', label: 'All Langs' },
                   { id: 'Python', label: 'Python' },
@@ -688,7 +688,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                     key={lang.id}
                     type="button"
                     onClick={() => setSelectedLanguage(lang.id)}
-                    className={`px-2.5 py-1.5 transition cursor-pointer uppercase ${
+                    className={`px-3 py-1.5 transition cursor-pointer uppercase ${
                       selectedLanguage === lang.id
                         ? 'bg-[#3A0F34] text-white dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
                         : 'text-[#555555] dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D]'
@@ -700,7 +700,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
               </div>
 
               {/* Seniority Filter */}
-              <div className="flex items-center border border-[#E5DFD5] dark:border-[#3A0F34] divide-x divide-[#E5DFD5] dark:divide-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[11px] font-mono">
+              <div className="flex items-center rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] divide-x divide-[#E5DFD5] dark:divide-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[11px] font-mono overflow-hidden shadow-2xs">
                 {[
                   { id: 'all', label: 'All Levels' },
                   { id: 'Mid', label: 'Mid' },
@@ -711,7 +711,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                     key={lvl.id}
                     type="button"
                     onClick={() => setSelectedDifficulty(lvl.id)}
-                    className={`px-2.5 py-1.5 transition cursor-pointer uppercase ${
+                    className={`px-3 py-1.5 transition cursor-pointer uppercase ${
                       selectedDifficulty === lvl.id
                         ? 'bg-[#3A0F34] text-white dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
                         : 'text-[#555555] dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D]'
@@ -750,7 +750,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
         {/* Challenge Cards Grid */}
         <section className="px-4 sm:px-8 py-10 bg-[#F8F6F1] dark:bg-[#120516] transition-colors">
           {filteredChallenges.length === 0 ? (
-            <div className="p-12 text-center border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#16061D]">
+            <div className="p-12 text-center rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#16061D] shadow-xs">
               <SlidersHorizontal className="h-8 w-8 text-[#7A7875] dark:text-slate-400 mx-auto mb-3" />
               <h3 className="font-didone text-lg font-bold text-[#111111] dark:text-[#F8F6F1]">No matching challenges found</h3>
               <p className="text-xs text-[#555555] dark:text-slate-300 mt-1 font-sans">
@@ -763,7 +763,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                   setSelectedLanguage('all');
                   setSearchQuery('');
                 }}
-                className="mt-4 px-4 py-2 border border-[#3A0F34] dark:border-[#EAAA00] bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] text-xs font-mono uppercase font-bold"
+                className="mt-4 px-4 py-2 rounded-xl border border-[#3A0F34] dark:border-[#EAAA00] bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] text-xs font-mono uppercase font-bold transition shadow-xs"
               >
                 Clear All Filters
               </button>
@@ -775,21 +775,19 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                 return (
                   <div
                     key={ch.id}
-                    className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col justify-between hover:border-[#3A0F34] dark:hover:border-[#EAAA00]/70 transition-all group rounded-none"
+                    className="relative p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col justify-between hover:border-[#3A0F34] dark:hover:border-[#EAAA00]/70 transition-all duration-200 group shadow-xs hover:shadow-md hover:-translate-y-0.5"
                   >
-                    <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
-
                     <div>
                       {/* Top Badges */}
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#EAAA00]">
+                        <span className="text-[10px] font-mono font-semibold uppercase px-2.5 py-0.5 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#EAAA00]">
                           {ch.domainLabel}
                         </span>
                         <div className="flex items-center gap-1.5 font-mono text-[10px]">
-                          <span className="px-1.5 py-0.5 bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-bold">
                             {ch.difficulty}
                           </span>
-                          <span className="px-1.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[#555555] dark:text-slate-300 font-semibold">
+                          <span className="px-2 py-0.5 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-[#555555] dark:text-slate-300 font-semibold">
                             {ch.language}
                           </span>
                         </div>
@@ -804,9 +802,9 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                       </p>
 
                       {/* Key Topics */}
-                      <div className="mt-4 flex flex-wrap gap-1 font-mono text-[9px] text-[#7A7875] dark:text-slate-400">
+                      <div className="mt-4 flex flex-wrap gap-1.5 font-mono text-[9px] text-[#7A7875] dark:text-slate-400">
                         {ch.keyTopics.map((k) => (
-                          <span key={k} className="px-1.5 py-0.5 bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                          <span key={k} className="px-2 py-0.5 rounded-md bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
                             {k}
                           </span>
                         ))}
@@ -820,7 +818,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                         onClick={() => setInspectingChallenge(ch)}
                         className="text-[11px] font-mono text-[#555555] dark:text-slate-300 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:underline transition cursor-pointer flex items-center gap-1"
                       >
-                        <BookOpen className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00]" />
+                        <BookOpen className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
                         <span>Inspect Spec</span>
                       </button>
 
@@ -828,7 +826,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                         type="button"
                         disabled={launchStage !== 'idle'}
                         onClick={() => handleLaunchChallenge(ch)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#3A0F34] hover:bg-[#2A0B26] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] text-white dark:text-[#120516] text-[11px] font-mono font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] text-[11px] font-mono font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer disabled:opacity-50 shadow-xs hover:shadow-md hover:scale-[1.02]"
                       >
                         {isLaunching ? (
                           <>
@@ -855,13 +853,13 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
 
       {/* Challenge Detail & Starter Code Inspector Modal */}
       {inspectingChallenge && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111111]/70 backdrop-blur-xs animate-fadeIn">
-          <div className="relative w-full max-w-3xl max-h-[90vh] flex flex-col bg-[#F8F6F1] dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xl overflow-hidden rounded-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111111]/70 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-3xl max-h-[90vh] flex flex-col bg-[#F8F6F1] dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-3xl shadow-2xl overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#1A0826]">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 bg-[#3A0F34] text-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516]">
-                  <Code2 className="h-4 w-4" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-[#3A0F34] text-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] shadow-xs">
+                  <Code2 className="h-4.5 w-4.5" />
                 </div>
                 <div>
                   <span className="text-[10px] font-mono tracking-widest uppercase text-[#7A7875] dark:text-slate-400 block">
@@ -875,7 +873,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
               <button
                 type="button"
                 onClick={() => setInspectingChallenge(null)}
-                className="p-1 text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] transition"
+                className="p-1.5 rounded-full text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#250C3D] transition cursor-pointer"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -900,7 +898,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                   <h4 className="font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] uppercase tracking-wider text-[11px] mb-2">
                     Evaluation Weighting
                   </h4>
-                  <p className="font-mono text-xs text-[#555555] dark:text-slate-300 bg-white dark:bg-[#120516] p-2.5 border border-[#E5DFD5] dark:border-[#3A0F34]">
+                  <p className="font-mono text-xs text-[#555555] dark:text-slate-300 bg-white dark:bg-[#120516] p-3 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]">
                     {inspectingChallenge.rubricWeight}
                   </p>
                 </div>
@@ -909,10 +907,10 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                   <h4 className="font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] uppercase tracking-wider text-[11px] mb-2">
                     Core Architectural Vectors
                   </h4>
-                  <ul className="space-y-1 text-[11px] text-[#555555] dark:text-slate-300">
+                  <ul className="space-y-1.5 text-[11px] text-[#555555] dark:text-slate-300">
                     {inspectingChallenge.expectedConcepts.map((c) => (
                       <li key={c} className="flex items-start gap-1.5">
-                        <CheckCircle2 className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
                         <span>{c}</span>
                       </li>
                     ))}
@@ -945,7 +943,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                     )}
                   </button>
                 </div>
-                <div className="relative bg-[#111111] text-[#F8F6F1] p-4 font-mono text-xs overflow-x-auto border border-[#E5DFD5] dark:border-[#3A0F34]">
+                <div className="relative bg-[#111111] text-[#F8F6F1] p-4 rounded-2xl font-mono text-xs overflow-x-auto border border-[#E5DFD5] dark:border-[#3A0F34] shadow-xs">
                   <pre>{inspectingChallenge.starterCode}</pre>
                 </div>
               </div>
@@ -961,7 +959,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setInspectingChallenge(null)}
-                  className="px-4 py-2 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-xs font-mono font-semibold text-[#555555] dark:text-slate-300 hover:bg-[#F8F6F1] dark:hover:bg-[#250C3D] cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] text-xs font-mono font-semibold text-[#555555] dark:text-slate-300 hover:bg-[#F8F6F1] dark:hover:bg-[#250C3D] transition cursor-pointer shadow-xs"
                 >
                   Cancel
                 </button>
@@ -974,7 +972,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
                     setInspectingChallenge(null);
                     handleLaunchChallenge(ch);
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#3A0F34] hover:bg-[#2A0B26] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] text-white dark:text-[#120516] text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] text-xs font-mono font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer disabled:opacity-50 shadow-xs hover:shadow-md hover:scale-[1.02]"
                 >
                   <span>Practice This Challenge</span>
                   <ArrowRight className="h-3.5 w-3.5 text-[#EAAA00] dark:text-[#120516]" />

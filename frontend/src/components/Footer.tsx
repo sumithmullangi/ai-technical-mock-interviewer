@@ -13,16 +13,11 @@ export const Footer: React.FC<FooterProps> = ({ onReplayIntro }) => {
   return (
     <footer className="border-t border-[#E5DFD5] dark:border-[#3A0F34]/40 bg-[#F8F6F1] dark:bg-[#120516] transition-colors relative">
       <div className="editorial-frame px-4 sm:px-6 lg:px-8 py-8 sm:py-10 border-l border-r border-[#E5DFD5] dark:border-[#3A0F34]/30 relative">
-        <div className="editorial-crosshair -top-2.5 -left-2.5">+</div>
-        <div className="editorial-crosshair -top-2.5 -right-2.5">+</div>
-        <div className="editorial-crosshair -bottom-2.5 -left-2.5">+</div>
-        <div className="editorial-crosshair -bottom-2.5 -right-2.5">+</div>
-
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           {/* Brand & Purpose */}
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#3A0F34] text-[#EAAA00] shadow-xs">
-              <Terminal className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-gradient-to-br from-[#3A0F34] to-[#52174A] text-[#EAAA00] shadow-xs">
+              <Terminal className="h-4.5 w-4.5" />
             </div>
             <div>
               <div className="flex flex-col leading-none">
@@ -81,9 +76,9 @@ export const Footer: React.FC<FooterProps> = ({ onReplayIntro }) => {
         {/* Bottom Attribution */}
         <div className="mt-8 pt-6 border-t border-[#E5DFD5] dark:border-[#3A0F34]/30 flex flex-col sm:flex-row items-center justify-between text-xs text-[#7A7875] gap-3 font-mono">
           <p>© {CURRENT_YEAR} MockInterview.ai • Formatted in Didone & Geist Monospace</p>
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
-            <span className="text-[#3A0F34] dark:text-[#EAAA00] font-medium uppercase tracking-wider text-[11px]">Editorial Grid System V2.4</span>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] shadow-2xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00] animate-pulse"></span>
+            <span className="text-[#3A0F34] dark:text-[#EAAA00] font-medium uppercase tracking-wider text-[10px]">Architectural Studio V2.4</span>
           </div>
         </div>
       </div>

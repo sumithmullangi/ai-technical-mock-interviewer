@@ -164,11 +164,11 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
   const isBrowserSupported = capabilities.hasSpeechRecognition && capabilities.hasSpeechSynthesis;
 
   return (
-    <div className="w-full border border-[#E5DFD5] dark:border-[#3A0F34]/70 bg-white dark:bg-[#16061D] transition-all">
+    <div className="w-full rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/70 bg-white dark:bg-[#16061D] transition-all overflow-hidden shadow-xs">
       {/* Header Bar */}
-      <div className="px-4 sm:px-6 py-3 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-wrap items-center justify-between gap-3 bg-[#FAF8F5]/80 dark:bg-[#120516]">
+      <div className="px-4 sm:px-6 py-3.5 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-wrap items-center justify-between gap-3 bg-[#FAF8F5]/80 dark:bg-[#120516]">
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center h-6 w-6 rounded-none border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D]">
+          <div className="flex items-center justify-center h-7 w-7 rounded-lg border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] shadow-2xs">
             <Radio className={`h-3.5 w-3.5 ${isLive ? 'text-[#EAAA00] animate-pulse' : 'text-[#7A7875] dark:text-slate-400'}`} />
           </div>
           <span className="text-[11px] font-mono font-bold tracking-[0.2em] uppercase text-[#3A0F34] dark:text-[#EAAA00]">
@@ -178,7 +178,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
 
         {/* Status Indicator */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-2.5 py-1 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1] dark:bg-[#250C3D] text-[10px] font-mono">
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1] dark:bg-[#250C3D] text-[10px] font-mono shadow-2xs">
             {isLive ? (
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
@@ -239,7 +239,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
 
           {/* Error Banner */}
           {errorMessage && (
-            <div className="p-3.5 border border-[#EF4444]/40 bg-[#EF4444]/10 text-[#EF4444] text-xs font-mono flex items-start gap-2.5 animate-fadeIn">
+            <div className="p-3.5 rounded-xl border border-[#EF4444]/40 bg-[#EF4444]/10 text-[#EF4444] text-xs font-mono flex items-start gap-2.5 animate-fadeIn shadow-2xs">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
               <div className="flex-1 leading-relaxed">
                 <span className="font-bold block mb-0.5">Voice Notice:</span>
@@ -250,10 +250,10 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
 
           {/* Active Voice Waveform & Status Visualizer */}
           {isLive && (
-            <div className="p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#120516] flex flex-wrap items-center justify-between gap-4">
+            <div className="p-4 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#120516] flex flex-wrap items-center justify-between gap-4 shadow-2xs">
               <div className="flex items-center gap-3">
                 <div
-                  className={`p-2 border ${
+                  className={`p-2.5 rounded-xl border ${
                     status === 'speaking'
                       ? 'border-[#EAAA00] bg-[#EAAA00]/20 text-[#8A6500] dark:text-[#EAAA00]'
                       : 'border-[#10B981] bg-[#10B981]/20 text-[#10B981]'
@@ -281,7 +281,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
                   <button
                     type="button"
                     onClick={handleInterruptSpeaking}
-                    className="px-2.5 py-1 border border-[#EF4444] bg-[#EF4444]/15 hover:bg-[#EF4444]/25 text-[#EF4444] text-[10px] font-mono font-bold tracking-wider uppercase transition flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl border border-[#EF4444] bg-[#EF4444]/15 hover:bg-[#EF4444]/25 text-[#EF4444] text-[10px] font-mono font-bold tracking-wider uppercase transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     title="Stop interviewer playback and speak now (or press Escape)"
                   >
                     <Square className="h-2.5 w-2.5 fill-current" />
@@ -343,8 +343,8 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
 
           {/* Real-time Dialogue / Transcript Stream */}
           {transcripts.length > 0 && (
-            <div className="border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/50 dark:bg-[#120516]/60 p-3 max-h-56 overflow-y-auto space-y-2.5 font-sans">
-              <div className="flex items-center justify-between pb-1 border-b border-[#E5DFD5] dark:border-[#3A0F34]/40">
+            <div className="rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/50 dark:bg-[#120516]/60 p-3.5 max-h-56 overflow-y-auto space-y-2.5 font-sans shadow-2xs">
+              <div className="flex items-center justify-between pb-1.5 border-b border-[#E5DFD5] dark:border-[#3A0F34]/40">
                 <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-[#7A7875] dark:text-slate-400 uppercase">
                   <MessageSquare className="h-3 w-3 text-[#EAAA00]" />
                   <span>Live Spoken Dialogue</span>
@@ -364,7 +364,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
               {transcripts.map((item) => (
                 <div
                   key={item.id}
-                  className={`p-2.5 text-xs border ${
+                  className={`p-3 rounded-xl text-xs border ${
                     item.speaker === 'interviewer'
                       ? 'border-[#3A0F34]/30 dark:border-[#EAAA00]/40 bg-white dark:bg-[#250C3D]/40 text-[#111111] dark:text-[#F8F6F1]'
                       : 'border-[#E5DFD5] dark:border-[#3A0F34]/40 bg-[#FAF8F5] dark:bg-[#16061D] text-[#333333] dark:text-slate-300 ml-4'
@@ -398,7 +398,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
                   {/* Thought Completed (Pause Detected) Badge */}
                   {item.speaker === 'candidate' && item.thoughtCompleted && (
                     <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-1.5 border-t border-[#E5DFD5]/40 dark:border-[#3A0F34]/30">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 border border-[#10B981]/40 bg-[#10B981]/10 text-[#10B981]">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full border border-[#10B981]/40 bg-[#10B981]/10 text-[#10B981]">
                         <CheckCircle2 className="h-3 w-3" />
                         <span>Thought Completed (Pause Detected)</span>
                       </span>
@@ -428,7 +428,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
           </div>
 
           {/* Action Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[#E5DFD5]/70 dark:border-[#3A0F34]/40">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E5DFD5]/70 dark:border-[#3A0F34]/40">
             <div className="text-[11px] font-sans text-[#7A7875] dark:text-slate-400">
               {!isLive ? (
                 <span>Speak with the AI interviewer using your microphone and browser speech synthesis.</span>
@@ -445,7 +445,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
                 <button
                   type="button"
                   onClick={handleInterruptSpeaking}
-                  className="px-3.5 py-2 border border-[#EF4444] bg-[#EF4444]/10 text-[#EF4444] hover:bg-[#EF4444]/20 text-xs font-mono font-bold tracking-wider uppercase transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="px-3.5 py-2 rounded-xl border border-[#EF4444] bg-[#EF4444]/10 text-[#EF4444] hover:bg-[#EF4444]/20 text-xs font-mono font-bold tracking-wider uppercase transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Square className="h-3 w-3 fill-current text-[#EF4444]" />
                   <span>Interrupt Speaking (Esc)</span>
@@ -457,7 +457,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
                   type="button"
                   onClick={handleAskFollowUp}
                   disabled={status === 'thinking'}
-                  className="px-3 py-1.5 border border-[#3A0F34] dark:border-[#EAAA00] bg-white dark:bg-[#16061D] text-[#3A0F34] dark:text-[#EAAA00] hover:bg-[#FAF8F5] text-xs font-mono font-bold tracking-wider uppercase transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3.5 py-2 rounded-xl border border-[#3A0F34] dark:border-[#EAAA00] bg-white dark:bg-[#16061D] text-[#3A0F34] dark:text-[#EAAA00] hover:bg-[#FAF8F5] text-xs font-mono font-bold tracking-wider uppercase transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
                 >
                   <Sparkles className="h-3 w-3 text-[#EAAA00]" />
                   <span>Get Technical Follow-up</span>
@@ -470,7 +470,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
                   onClick={handleStartVoice}
                   disabled={isConnecting || !isBrowserSupported}
                   id="start-voice-interview-button"
-                  className="px-4 py-2 border border-[#3A0F34] dark:border-[#EAAA00] bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] hover:bg-[#250C3D] dark:hover:bg-[#D49800] text-xs font-mono font-bold tracking-wider uppercase transition flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
+                  className="px-4 py-2.5 rounded-xl border border-[#3A0F34] dark:border-[#EAAA00] bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] text-xs font-mono font-bold tracking-wider uppercase transition-all duration-200 flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs hover:shadow-md hover:scale-[1.02]"
                 >
                   {isConnecting ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -484,7 +484,7 @@ export const VoiceInterviewPanel: React.FC<VoiceInterviewPanelProps> = ({
                   type="button"
                   onClick={handleEndVoice}
                   id="end-voice-interview-button"
-                  className="px-4 py-2 border border-[#EF4444] bg-white dark:bg-[#16061D] text-[#EF4444] hover:bg-[#EF4444]/10 text-xs font-mono font-bold tracking-wider uppercase transition flex items-center gap-2 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-[#EF4444] bg-white dark:bg-[#16061D] text-[#EF4444] hover:bg-[#EF4444]/10 text-xs font-mono font-bold tracking-wider uppercase transition flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   <MicOff className="h-3.5 w-3.5 text-[#EF4444]" />
                   <span>End Voice Session</span>

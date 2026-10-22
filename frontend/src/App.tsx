@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Navbar, type NavTab } from './components/Navbar';
+import { LandingPage } from './components/LandingPage';
 import { InterviewConsole } from './components/InterviewConsole';
 import { FeatureGrid } from './components/FeatureGrid';
 import { ChallengesView } from './components/ChallengesView';
@@ -16,7 +17,7 @@ import { ArrowRight, AlertTriangle } from 'lucide-react';
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<NavTab>('console');
+  const [activeTab, setActiveTab] = useState<NavTab>('landing');
   const [health, setHealth] = useState<HealthStatus>({ status: 'loading' });
   const [isSetupOpen, setIsSetupOpen] = useState(false);
   const [activeSession, setActiveSession] = useState<ConfiguredSession | null>(null);
@@ -199,9 +200,9 @@ function AppContent() {
   useEffect(() => {
     checkHealth();
 
-    // Check for direct anchor hash routing (e.g. #challenges, #rubric, #workflow, #sample-report, #architecture)
+    // Check for direct anchor hash routing (e.g. #challenges, #rubric, #workflow, #sample-report, #architecture, #console, #landing)
     const hash = window.location.hash.replace('#', '');
-    if (['challenges', 'workflow', 'rubric', 'sample-report', 'architecture'].includes(hash)) {
+    if (['landing', 'console', 'challenges', 'workflow', 'rubric', 'sample-report', 'architecture'].includes(hash)) {
       setActiveTab(hash as NavTab);
     }
 
@@ -279,31 +280,38 @@ function AppContent() {
                     <span className="text-[#555555] dark:text-slate-300 font-sans text-xs">
                       {activeSession.config.role} ({activeSession.config.difficulty}) • {activeSession.config.primaryLanguage} • {activeSession.config.questionCount} Challenges
                     </span>
-                    <span className="font-mono text-[10px] bg-white dark:bg-[#250C3D] px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#F8F6F1] font-semibold">
+                    <span className="font-mono text-[10px] bg-white dark:bg-[#250C3D] px-2.5 py-0.5 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#F8F6F1] font-semibold shadow-2xs">
                       {activeSession.sessionId || activeSession.session_id}
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-wider">
                     <button
                       onClick={() => setIsSetupOpen(true)}
-                      className="font-semibold text-[#3A0F34] dark:text-[#EAAA00] hover:underline transition-colors"
+                      className="font-semibold text-[#3A0F34] dark:text-[#EAAA00] hover:underline transition-colors cursor-pointer"
                     >
                       Parameters
                     </button>
                     <button
                       onClick={() => setIsSetupOpen(true)}
-                      className="inline-flex items-center gap-1.5 border border-[#3A0F34] bg-[#3A0F34] hover:bg-[#4E1446] px-3 py-1 font-bold text-white shadow-2xs transition"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-[#3A0F34] bg-[#3A0F34] hover:bg-[#4E1446] dark:bg-[#EAAA00] dark:hover:bg-[#d89c00] dark:text-[#120516] dark:border-[#EAAA00] px-3.5 py-1.5 font-bold text-white shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
                     >
                       <span>Resume Modal</span>
-                      <ArrowRight className="h-3 w-3 text-[#EAAA00]" />
+                      <ArrowRight className="h-3 w-3 text-[#EAAA00] dark:text-[#120516]" />
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Application-First Home Screen (Default Console) */}
-            {activeTab === 'console' ? (
+            {/* Public Single-Screen Landing Page */}
+            {activeTab === 'landing' ? (
+              <LandingPage
+                onStartPracticing={() => setIsSetupOpen(true)}
+                onHowItWorks={() => handleSelectTab('workflow')}
+                onExploreChallenges={() => handleSelectTab('challenges')}
+                onEnterStudio={() => handleSelectTab('console')}
+              />
+            ) : activeTab === 'console' ? (
               <InterviewConsole
                 onStartSession={(startedData) => setStartedSession(startedData)}
                 onConfigSaved={(configuredData) => setActiveSession(configuredData)}
@@ -322,15 +330,15 @@ function AppContent() {
               <FeatureGrid
                 activeSection={activeTab}
                 onSelectSection={handleSelectTab}
-                onBackToConsole={() => handleSelectTab('console')}
+                onBackToConsole={() => handleSelectTab('landing')}
               />
             )}
           </>
         )}
       </main>
 
-      {/* Global Footer */}
-      {!startedSession && (
+      {/* Global Footer: Rendered on interior content views; LandingPage has its own single-screen bottom datum strip */}
+      {!startedSession && activeTab !== 'landing' && (
         <Footer
           onOpenSetup={() => setIsSetupOpen(true)}
           onReplayIntro={() => setShowIntro(true)}

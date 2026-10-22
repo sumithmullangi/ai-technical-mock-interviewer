@@ -18,7 +18,7 @@ import {
 import type { HealthStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
 
-export type NavTab = 'console' | 'challenges' | 'workflow' | 'rubric' | 'sample-report' | 'architecture' | 'all';
+export type NavTab = 'landing' | 'console' | 'challenges' | 'workflow' | 'rubric' | 'sample-report' | 'architecture' | 'all';
 export type ThemeMode = 'light' | 'dark';
 
 interface NavbarProps {
@@ -77,19 +77,19 @@ export const Navbar: React.FC<NavbarProps> = ({
     : user?.email.slice(0, 2).toUpperCase() || 'U';
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[#E5DFD5] dark:border-[#3A0F34]/40 bg-[#F8F6F1]/92 dark:bg-[#120516]/92 backdrop-blur-md transition-colors duration-150">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between border-l border-r border-[#E5DFD5] dark:border-[#3A0F34]/30 px-4 sm:px-6 lg:px-8 relative">
+    <header className="sticky top-0 z-40 w-full border-b border-[#E5DFD5] dark:border-[#3A0F34]/40 bg-[#FAF8F5]/90 dark:bg-[#100414]/90 backdrop-blur-md transition-colors duration-150 shadow-xs">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between border-l border-r border-[#E5DFD5]/40 dark:border-[#3A0F34]/20 px-4 sm:px-6 lg:px-8 relative">
         {/* Brand: Stacked MOCK / INTERVIEW Wordmark */}
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => handleNavClick('console')}
-            className="group flex items-center gap-2.5 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-[#3A0F34] p-1 -m-1"
+            onClick={() => handleNavClick('landing')}
+            className="group flex items-center gap-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3A0F34] p-1 -m-1 rounded-xl transition-all cursor-pointer"
             aria-label="MockInterview.ai Home"
           >
             {/* Elegant Editorial Monogram Badge */}
-            <div className="flex h-7 w-7 items-center justify-center border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#3A0F34] text-[#EAAA00] shadow-2xs transition-transform group-hover:scale-105">
-              <span className="font-didone font-bold text-xs tracking-wider text-[#EAAA00]">M</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#3A0F34] to-[#55164D] border border-[#3A0F34]/30 text-[#EAAA00] shadow-xs transition-transform group-hover:scale-105">
+              <span className="font-didone font-bold text-sm tracking-wider text-[#EAAA00]">M</span>
             </div>
 
             {/* Stacked Wordmark in High-Contrast Didone Serif */}
@@ -104,17 +104,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
 
-        {/* Desktop Application Navigation Tabs - Architectural Grid Segmented Bar */}
-        <nav className="hidden md:flex items-center border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/90 dark:bg-[#1A0826]/90 divide-x divide-[#E5DFD5] dark:divide-[#3A0F34]/40 text-[11px] font-mono tracking-wider uppercase backdrop-blur-sm" aria-label="Application Navigation">
-          <button
-            type="button"
-            onClick={() => handleNavClick('console')}
-            className={`px-3.5 py-1.5 transition-colors flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'console'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-semibold'
-                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white/50 dark:hover:bg-[#250C3D]/50'
-            }`}
-          >
+        {/* Desktop Application Navigation Tabs - Architectural Grid Segmented Bar (hidden on landing page) */}
+        {activeTab !== 'landing' && (
+          <nav className="hidden md:flex items-center rounded-full border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white/70 dark:bg-[#1A0826]/70 p-1 text-[11px] font-mono tracking-wider uppercase backdrop-blur-md shadow-2xs" aria-label="Application Navigation">
+            <button
+              type="button"
+              onClick={() => handleNavClick('console')}
+              className={`rounded-full px-3.5 py-1.5 transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'console'
+                  ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold shadow-xs'
+                  : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
+              }`}
+            >
             <Layout className="h-3 w-3 text-[#EAAA00]" />
             <span>Studio</span>
           </button>
@@ -122,10 +123,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={() => handleNavClick('challenges')}
-            className={`px-3.5 py-1.5 transition-colors cursor-pointer ${
+            className={`rounded-full px-3.5 py-1.5 transition-all cursor-pointer ${
               activeTab === 'challenges'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-semibold'
-                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white/50 dark:hover:bg-[#250C3D]/50'
+                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold shadow-xs'
+                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
             }`}
           >
             Challenges
@@ -134,10 +135,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={() => handleNavClick('rubric')}
-            className={`px-3.5 py-1.5 transition-colors cursor-pointer ${
+            className={`rounded-full px-3.5 py-1.5 transition-all cursor-pointer ${
               activeTab === 'rubric'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-semibold'
-                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white/50 dark:hover:bg-[#250C3D]/50'
+                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold shadow-xs'
+                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
             }`}
           >
             Rubric
@@ -146,10 +147,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={() => handleNavClick('sample-report')}
-            className={`px-3.5 py-1.5 transition-colors cursor-pointer ${
+            className={`rounded-full px-3.5 py-1.5 transition-all cursor-pointer ${
               activeTab === 'sample-report'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-semibold'
-                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white/50 dark:hover:bg-[#250C3D]/50'
+                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold shadow-xs'
+                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
             }`}
           >
             Dossiers
@@ -158,23 +159,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={() => handleNavClick('architecture')}
-            className={`px-3.5 py-1.5 transition-colors cursor-pointer ${
+            className={`rounded-full px-3.5 py-1.5 transition-all cursor-pointer ${
               activeTab === 'architecture'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-semibold'
-                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white/50 dark:hover:bg-[#250C3D]/50'
+                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold shadow-xs'
+                : 'text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
             }`}
           >
             Architecture
           </button>
         </nav>
+        )}
 
         {/* Right Actions, Health, Auth, Theme & Primary CTA */}
         <div className="flex items-center gap-2 sm:gap-2.5">
           {/* Backend Health Badge */}
           <div
-            className={`hidden sm:flex items-center gap-2 border px-2.5 py-1 text-xs font-mono uppercase tracking-wider transition-all ${
+            className={`hidden sm:flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-mono uppercase tracking-wider transition-all shadow-2xs ${
               health.status === 'ok'
-                ? 'border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#1A0826]/80 text-[#111111] dark:text-[#F8F6F1]'
+                ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
                 : health.status === 'loading'
                 ? 'border-[#EAAA00]/40 bg-[#EAAA00]/10 text-[#3A0F34] dark:text-[#EAAA00]'
                 : 'border-[#E5DFD5] dark:border-slate-800 bg-white/50 text-[#7A7875]'
@@ -189,11 +191,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             {health.status === 'ok' ? (
               <>
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EAAA00] opacity-75"></span>
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
                 </span>
-                <span className="text-[10px] font-semibold text-[#111111] dark:text-[#F8F6F1]">Engine Active</span>
+                <span className="text-[10px] font-bold tracking-wider">Engine Active</span>
               </>
             ) : health.status === 'loading' ? (
               <>
@@ -228,7 +230,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 e.stopPropagation();
                 onToggleTheme();
               }}
-              className="flex items-center justify-center h-7 w-7 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#1A0826] text-[#111111] dark:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D] transition shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3A0F34] cursor-pointer"
+              className="flex items-center justify-center h-8 w-8 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white/80 dark:bg-[#1A0826]/80 text-[#111111] dark:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D] transition-all shadow-2xs hover:shadow-xs active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3A0F34] cursor-pointer"
               title={theme === 'dark' ? 'Switch to warm ivory editorial theme' : 'Switch to nocturnal editorial theme'}
               aria-label={theme === 'dark' ? 'Switch to warm ivory editorial theme' : 'Switch to nocturnal editorial theme'}
             >
@@ -246,11 +248,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2 p-1 pl-1.5 pr-2 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#1A0826] hover:bg-white dark:hover:bg-[#250C3D] transition text-[#111111] dark:text-[#F8F6F1] text-xs font-mono shadow-2xs focus:outline-none focus-visible:ring-1 focus-visible:ring-[#3A0F34] cursor-pointer"
+                className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#1A0826] hover:bg-slate-50 dark:hover:bg-[#250C3D] transition text-[#111111] dark:text-[#F8F6F1] text-xs font-mono shadow-2xs focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3A0F34] cursor-pointer"
                 aria-expanded={userDropdownOpen}
                 aria-haspopup="true"
               >
-                <div className="flex h-5 w-5 items-center justify-center bg-[#3A0F34] text-[#EAAA00] font-bold text-[10px]">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[#3A0F34] to-[#55164D] text-[#EAAA00] font-bold text-[10px]">
                   {userInitials}
                 </div>
                 <span className="hidden lg:inline-block max-w-[110px] truncate text-[11px] font-semibold">
@@ -260,8 +262,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {userDropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-56 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#1A0826] shadow-xl py-1.5 text-xs text-[#111111] dark:text-[#F8F6F1] z-50 animate-fadeIn font-mono">
-                  <div className="px-3 py-2 border-b border-[#E5DFD5] dark:border-[#3A0F34]/40">
+                <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#1A0826] shadow-xl py-2 text-xs text-[#111111] dark:text-[#F8F6F1] z-50 animate-fadeIn font-mono overflow-hidden">
+                  <div className="px-3.5 py-2 border-b border-[#E5DFD5] dark:border-[#3A0F34]/40">
                     <p className="font-bold text-[#111111] dark:text-white truncate">
                       {user.full_name}
                     </p>
@@ -276,7 +278,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setUserDropdownOpen(false);
                       if (onOpenHistory) onOpenHistory();
                     }}
-                    className="w-full text-left px-3 py-2 hover:bg-white dark:hover:bg-[#250C3D] flex items-center gap-2 text-[#111111] dark:text-slate-200 transition font-medium"
+                    className="w-full text-left px-3.5 py-2 hover:bg-white dark:hover:bg-[#250C3D] flex items-center gap-2 text-[#111111] dark:text-slate-200 transition font-medium"
                   >
                     <History className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
                     <span>Interview Dossier</span>
@@ -290,7 +292,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setUserDropdownOpen(false);
                       await logout();
                     }}
-                    className="w-full text-left px-3 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-2 transition font-medium"
+                    className="w-full text-left px-3.5 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-2 transition font-medium"
                   >
                     <LogOut className="h-3.5 w-3.5" />
                     <span>Sign Out</span>
@@ -303,35 +305,37 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenAuth?.('login')}
-                className="px-2.5 py-1.5 text-[#7A7875] hover:text-[#111111] transition flex items-center gap-1.5 uppercase tracking-wider"
+                className="rounded-full px-3 py-1.5 text-[#7A7875] hover:text-[#111111] dark:hover:text-white transition flex items-center gap-1.5 uppercase tracking-wider cursor-pointer"
               >
                 <LogIn className="h-3 w-3" />
-                <span>Log in</span>
+                <span>{activeTab === 'landing' ? 'Sign in' : 'Log in'}</span>
               </button>
-              <button
-                type="button"
-                onClick={() => onOpenAuth?.('signup')}
-                className="px-2.5 py-1.5 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#1A0826] text-[#3A0F34] dark:text-[#EAAA00] hover:bg-white dark:hover:bg-[#250C3D] transition flex items-center gap-1.5 uppercase tracking-wider"
-              >
-                <UserPlus className="h-3 w-3 text-[#EAAA00]" />
-                <span>Register</span>
-              </button>
+              {activeTab !== 'landing' && (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuth?.('signup')}
+                  className="rounded-full px-3.5 py-1.5 border border-[#3A0F34]/20 dark:border-[#EAAA00]/30 bg-white/80 dark:bg-[#1A0826] text-[#3A0F34] dark:text-[#EAAA00] hover:bg-[#3A0F34]/5 dark:hover:bg-[#EAAA00]/10 transition flex items-center gap-1.5 uppercase tracking-wider shadow-2xs cursor-pointer"
+                >
+                  <UserPlus className="h-3 w-3 text-[#EAAA00]" />
+                  <span>Register</span>
+                </button>
+              )}
             </div>
           )}
 
           {/* Primary CTA: Crisp Architectural Button */}
           <button
             onClick={onOpenSetup}
-            className="inline-flex items-center gap-2 border border-[#3A0F34] bg-[#3A0F34] hover:bg-[#4E1446] px-3.5 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-[#F8F6F1] shadow-2xs transition active:scale-[0.98] cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#3A0F34] to-[#55164D] hover:from-[#2E0B29] hover:to-[#45103E] dark:bg-gradient-to-r dark:from-[#EAAA00] dark:to-[#ffca36] dark:text-[#100414] px-4 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-[#F8F6F1] shadow-xs hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
           >
-            <span>Start Session</span>
-            <ArrowRight className="h-3 w-3 stroke-[2.5] text-[#EAAA00]" />
+            <span>{activeTab === 'landing' ? 'Start practicing' : 'Start Session'}</span>
+            <ArrowRight className="h-3 w-3 stroke-[2.5] text-[#EAAA00] dark:text-[#100414]" />
           </button>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 border border-[#E5DFD5] text-[#7A7875] hover:text-[#111111] transition"
+            className="md:hidden p-1.5 rounded-lg border border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[#7A7875] hover:text-[#111111] dark:hover:text-white transition cursor-pointer"
             aria-label="Toggle Navigation Menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -342,12 +346,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1] dark:bg-[#120516] px-4 pt-2 pb-4 space-y-2 text-xs font-mono text-[#111111] dark:text-slate-300 animate-fadeIn">
+        <div className="md:hidden border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#100414] px-4 pt-3 pb-5 space-y-2 text-xs font-mono text-[#111111] dark:text-slate-300 animate-fadeIn">
           {/* User Status in Mobile */}
           {isAuthenticated && user ? (
-            <div className="p-3 bg-[#FAF8F5] dark:bg-[#1A0826] border border-[#E5DFD5] dark:border-[#3A0F34]/50 space-y-2">
+            <div className="p-3.5 bg-white dark:bg-[#1A0826] border border-[#E5DFD5] dark:border-[#3A0F34]/50 rounded-2xl shadow-xs space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 items-center justify-center bg-[#3A0F34] text-[#EAAA00] font-bold text-xs">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#3A0F34] to-[#55164D] text-[#EAAA00] font-bold text-xs shadow-2xs">
                   {userInitials}
                 </div>
                 <div className="truncate">
@@ -362,7 +366,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileMenuOpen(false);
                     onOpenHistory?.();
                   }}
-                  className="flex-1 py-1.5 px-2 bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-xs font-semibold text-[#111111] dark:text-[#F8F6F1] flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 px-3 bg-[#FAF8F5] dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl text-xs font-semibold text-[#111111] dark:text-[#F8F6F1] flex items-center justify-center gap-1.5 transition hover:bg-white cursor-pointer"
                 >
                   <History className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
                   <span>Dossier</span>
@@ -373,7 +377,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileMenuOpen(false);
                     await logout();
                   }}
-                  className="py-1.5 px-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs font-semibold text-rose-600 flex items-center justify-center gap-1"
+                  className="py-2 px-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center justify-center gap-1 transition cursor-pointer"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   <span>Logout</span>
@@ -388,7 +392,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setMobileMenuOpen(false);
                   onOpenAuth?.('login');
                 }}
-                className="flex-1 py-2 px-3 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#1A0826] text-xs font-bold text-[#111111] dark:text-slate-200 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                className="flex-1 py-2 px-3 border border-[#E5DFD5] dark:border-[#3A0F34] rounded-xl bg-white dark:bg-[#1A0826] text-xs font-bold text-[#111111] dark:text-slate-200 flex items-center justify-center gap-1.5 uppercase tracking-wider transition shadow-2xs cursor-pointer"
               >
                 <LogIn className="h-3.5 w-3.5" />
                 <span>Log in</span>
@@ -399,7 +403,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setMobileMenuOpen(false);
                   onOpenAuth?.('signup');
                 }}
-                className="flex-1 py-2 px-3 bg-[#3A0F34] text-[#F8F6F1] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs uppercase tracking-wider"
+                className="flex-1 py-2 px-3 bg-gradient-to-r from-[#3A0F34] to-[#55164D] rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider transition cursor-pointer"
               >
                 <UserPlus className="h-3.5 w-3.5 text-[#EAAA00]" />
                 <span>Sign up</span>
@@ -407,66 +411,101 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => handleNavClick('console')}
-            className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${
-              activeTab === 'console'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold'
-                : 'hover:bg-white dark:hover:bg-[#1A0826]'
-            }`}
-          >
-            <Layout className="h-4 w-4 text-[#EAAA00]" />
-            <span>Practice Studio</span>
-          </button>
+          {activeTab === 'landing' ? (
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenSetup();
+                }}
+                className="w-full text-left px-3.5 py-2.5 rounded-xl bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-bold shadow-xs flex items-center justify-between cursor-pointer"
+              >
+                <span>Start practicing</span>
+                <ArrowRight className="h-4 w-4 text-[#EAAA00] dark:text-[#120516]" />
+              </button>
 
-          <button
-            type="button"
-            onClick={() => handleNavClick('challenges')}
-            className={`w-full text-left px-3 py-2 transition ${
-              activeTab === 'challenges'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold'
-                : 'hover:bg-white dark:hover:bg-[#1A0826]'
-            }`}
-          >
-            Challenge Bank
-          </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('workflow')}
+                className="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-white dark:hover:bg-[#1A0826] text-[#555555] dark:text-slate-300 font-medium cursor-pointer"
+              >
+                How it works
+              </button>
 
-          <button
-            type="button"
-            onClick={() => handleNavClick('rubric')}
-            className={`w-full text-left px-3 py-2 transition ${
-              activeTab === 'rubric'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold'
-                : 'hover:bg-white dark:hover:bg-[#1A0826]'
-            }`}
-          >
-            4D Evaluation Rubric
-          </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('console')}
+                className="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-white dark:hover:bg-[#1A0826] text-[#555555] dark:text-slate-300 font-medium flex items-center gap-2 cursor-pointer"
+              >
+                <Layout className="h-4 w-4 text-[#EAAA00]" />
+                <span>Practice Studio</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => handleNavClick('console')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer ${
+                  activeTab === 'console'
+                    ? 'bg-[#3A0F34] text-white font-bold shadow-xs'
+                    : 'hover:bg-white dark:hover:bg-[#1A0826]'
+                }`}
+              >
+                <Layout className="h-4 w-4 text-[#EAAA00]" />
+                <span>Practice Studio</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => handleNavClick('sample-report')}
-            className={`w-full text-left px-3 py-2 transition ${
-              activeTab === 'sample-report'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold'
-                : 'hover:bg-white dark:hover:bg-[#1A0826]'
-            }`}
-          >
-            Candidate Dossiers
-          </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('challenges')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
+                  activeTab === 'challenges'
+                    ? 'bg-[#3A0F34] text-white font-bold shadow-xs'
+                    : 'hover:bg-white dark:hover:bg-[#1A0826]'
+                }`}
+              >
+                Challenge Bank
+              </button>
 
-          <button
-            type="button"
-            onClick={() => handleNavClick('architecture')}
-            className={`w-full text-left px-3 py-2 transition ${
-              activeTab === 'architecture'
-                ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold'
-                : 'hover:bg-white dark:hover:bg-[#1A0826]'
-            }`}
-          >
-            System Architecture
-          </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('rubric')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
+                  activeTab === 'rubric'
+                    ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold shadow-xs'
+                    : 'hover:bg-white dark:hover:bg-[#1A0826]'
+                }`}
+              >
+                4D Evaluation Rubric
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleNavClick('sample-report')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
+                  activeTab === 'sample-report'
+                    ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold shadow-xs'
+                    : 'hover:bg-white dark:hover:bg-[#1A0826]'
+                }`}
+              >
+                Candidate Dossiers
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleNavClick('architecture')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
+                  activeTab === 'architecture'
+                    ? 'bg-[#3A0F34] text-[#F8F6F1] font-bold shadow-xs'
+                    : 'hover:bg-white dark:hover:bg-[#1A0826]'
+                }`}
+              >
+                System Architecture
+              </button>
+            </>
+          )}
 
           {/* Mobile Theme Toggle */}
           {onToggleTheme && (

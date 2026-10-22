@@ -428,7 +428,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[10px] font-mono tracking-widest uppercase text-[#3A0F34] dark:text-[#EAAA00] mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3A0F34]/20 dark:border-[#EAAA00]/30 bg-white/80 dark:bg-[#250C3D] text-[10px] font-mono tracking-widest uppercase text-[#3A0F34] dark:text-[#EAAA00] mb-3 shadow-2xs">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
                 <span>INTERACTIVE ASSESSMENT WORKSPACE</span>
               </div>
@@ -444,18 +444,18 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
               <button
                 type="button"
                 onClick={() => setShowResumeDrawer(!showResumeDrawer)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition cursor-pointer font-semibold uppercase tracking-wider text-[11px]"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-all cursor-pointer font-semibold uppercase tracking-wider text-[11px]"
               >
-                <RotateCcw className="h-3 w-3 text-[#EAAA00]" />
+                <RotateCcw className="h-3.5 w-3.5 text-[#EAAA00]" />
                 <span>{showResumeDrawer ? 'Close Resume' : 'Resume UUID'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={onOpenSetupModal}
-                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#111111] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition cursor-pointer font-semibold uppercase tracking-wider text-[11px]"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#111111] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-all cursor-pointer font-semibold uppercase tracking-wider text-[11px]"
               >
-                <Sliders className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00]" />
+                <Sliders className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
                 <span>Config Modal</span>
               </button>
             </div>
@@ -465,7 +465,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
         {/* Collapsible Resume Session Drawer */}
         {showResumeDrawer && (
           <div className="px-4 sm:px-8 py-6 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/90 dark:bg-[#16061D]/95 backdrop-blur-xs animate-fadeIn">
-            <div className="max-w-2xl">
+            <div className="max-w-2xl bg-white dark:bg-[#1A0826] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-2xl p-6 shadow-xl">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <RotateCcw className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00]" />
@@ -473,7 +473,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                 </div>
                 <button
                   onClick={() => setShowResumeDrawer(false)}
-                  className="p-1 text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] transition"
+                  className="p-1.5 rounded-full text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-slate-100 dark:hover:bg-[#250C3D] transition"
                   aria-label="Close"
                 >
                   <X className="h-4 w-4" />
@@ -483,7 +483,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                 Enter your previously registered session UUID to resume your evaluation stream or review your completed report.
               </p>
               {resumeError && (
-                <div className="mb-4 p-3 rounded-none border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/50 text-xs text-rose-800 dark:text-rose-200">
+                <div className="mb-4 p-3 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/50 text-xs text-rose-800 dark:text-rose-200">
                   {resumeError}
                 </div>
               )}
@@ -497,12 +497,12 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                   }}
                   placeholder="Paste session UUID (e.g. 3fa85f64-5717-4562-b3fc-2c963f66afa6)..."
                   disabled={resumeLoading}
-                  className="flex-1 rounded-none border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] px-3.5 py-2.5 text-xs font-mono text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none"
+                  className="flex-1 rounded-xl border border-slate-300 dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] px-4 py-2.5 text-xs font-mono text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none focus:ring-2 focus:ring-[#3A0F34]/15"
                 />
                 <button
                   type="submit"
                   disabled={resumeLoading || !resumeId.trim()}
-                  className="rounded-none bg-[#3A0F34] dark:bg-[#EAAA00] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] px-5 py-2.5 text-xs font-mono font-bold text-white dark:text-[#120516] transition disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer shadow-xs border border-[#3A0F34] dark:border-[#EAAA00]"
+                  className="rounded-xl bg-gradient-to-r from-[#3A0F34] to-[#55164D] hover:from-[#2E0B29] hover:to-[#45103E] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] px-5 py-2.5 text-xs font-mono font-bold text-white dark:text-[#120516] transition disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer shadow-xs hover:shadow hover:-translate-y-0.5 active:translate-y-0"
                 >
                   {resumeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[#EAAA00] dark:text-[#120516]" /> : <span>Resume Session</span>}
                 </button>
@@ -515,7 +515,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
         {errorMessage && (
           <div
             role="alert"
-            className="px-4 sm:px-8 py-4 border-b border-rose-300 dark:border-rose-900 bg-rose-50/90 dark:bg-rose-950/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-3"
+            className="mx-4 sm:mx-8 my-4 p-4 rounded-2xl border border-rose-300 dark:border-rose-900 bg-rose-50/90 dark:bg-rose-950/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-3 shadow-xs"
           >
             <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -561,33 +561,36 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                       setConfig({ ...config, role: track.id });
                       if (errorMessage) setErrorMessage(null);
                     }}
-                    className={`relative text-left p-5 border transition-all cursor-pointer flex flex-col justify-between rounded-none ${
+                    className={`relative text-left p-5 border transition-all duration-200 cursor-pointer flex flex-col justify-between rounded-2xl ${
                       isSelected
-                        ? 'border-[#3A0F34] bg-[#FAF8F5] dark:border-[#EAAA00] dark:bg-[#250C3D] shadow-xs'
-                        : 'border-[#E5DFD5] bg-[#F8F6F1]/70 dark:border-[#3A0F34]/50 dark:bg-[#16061D]/70 hover:border-[#3A0F34]/50 dark:hover:border-[#EAAA00]/50 hover:bg-white dark:hover:bg-[#250C3D]/40'
+                        ? 'border-[#3A0F34] ring-2 ring-[#3A0F34] dark:ring-[#EAAA00] dark:border-[#EAAA00] bg-white dark:bg-[#1E082B] shadow-sm'
+                        : 'border-[#E5DFD5] bg-white/80 dark:border-[#3A0F34]/50 dark:bg-[#16061D]/80 hover:border-[#3A0F34]/40 dark:hover:border-[#EAAA00]/40 hover:bg-white dark:hover:bg-[#20092E]/40 hover:-translate-y-0.5 hover:shadow-xs'
                     }`}
                   >
-                    {/* Active Corner Accent */}
+                    {/* Active Corner Accent Indicator */}
                     {isSelected && (
-                      <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#3A0F34] dark:bg-[#EAAA00]" />
+                      <span className="absolute top-4 right-4 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EAAA00] opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#EAAA00]"></span>
+                      </span>
                     )}
 
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <div
-                          className={`p-2 transition-colors ${
+                          className={`p-2.5 rounded-xl transition-colors shadow-2xs ${
                             isSelected
                               ? 'bg-[#3A0F34] text-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516]'
-                              : 'bg-white text-[#3A0F34] border border-[#E5DFD5] dark:bg-[#120516] dark:text-[#EAAA00] dark:border-[#3A0F34]'
+                              : 'bg-[#FAF8F5] text-[#3A0F34] border border-[#E5DFD5] dark:bg-[#120516] dark:text-[#EAAA00] dark:border-[#3A0F34]'
                           }`}
                         >
                           <Icon className="h-4 w-4" />
                         </div>
                         <span
-                          className={`text-[9px] font-mono tracking-wider uppercase px-2 py-0.5 border ${
+                          className={`text-[9px] font-mono tracking-wider uppercase px-2.5 py-0.5 rounded-full border ${
                             isSelected
-                              ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00]'
-                              : 'text-[#7A7875] bg-white border-[#E5DFD5] dark:bg-[#120516] dark:text-slate-400 dark:border-[#3A0F34]'
+                              ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-semibold'
+                              : 'text-[#7A7875] bg-white dark:bg-[#120516] border-[#E5DFD5] dark:text-slate-400 dark:border-[#3A0F34]'
                           }`}
                         >
                           {track.badge}
@@ -602,11 +605,11 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                       </p>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-wrap gap-1 font-mono text-[9px] text-[#7A7875] dark:text-slate-400">
+                    <div className="mt-4 pt-3 border-t border-[#E5DFD5]/80 dark:border-[#3A0F34]/40 flex flex-wrap gap-1 font-mono text-[9px] text-[#7A7875] dark:text-slate-400">
                       {track.topics.map((t) => (
                         <span
                           key={t}
-                          className="px-1.5 py-0.5 bg-white dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]"
+                          className="px-2 py-0.5 rounded-md bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]"
                         >
                           {t}
                         </span>
@@ -641,10 +644,10 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                         setConfig({ ...config, difficulty: level });
                         if (errorMessage) setErrorMessage(null);
                       }}
-                      className={`py-2.5 text-xs font-mono transition-all cursor-pointer border rounded-none ${
+                      className={`py-2.5 text-xs font-mono transition-all cursor-pointer border rounded-xl ${
                         isSelected
-                          ? 'border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
-                          : 'border-[#E5DFD5] bg-white text-[#555555] dark:border-[#3A0F34] dark:bg-[#16061D] dark:text-slate-300 hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                          ? 'border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold shadow-xs'
+                          : 'border-[#E5DFD5] bg-white text-[#555555] dark:border-[#3A0F34] dark:bg-[#16061D] dark:text-slate-300 hover:bg-[#FAF8F5] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1] shadow-2xs'
                       }`}
                     >
                       {level}
@@ -675,10 +678,10 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                         setConfig({ ...config, primaryLanguage: lang });
                         if (errorMessage) setErrorMessage(null);
                       }}
-                      className={`py-2.5 px-3 text-xs font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 border rounded-none ${
+                      className={`py-2.5 px-3 text-xs font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 border rounded-xl ${
                         isSelected
-                          ? 'border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
-                          : 'border-[#E5DFD5] bg-white text-[#555555] dark:border-[#3A0F34] dark:bg-[#16061D] dark:text-slate-300 hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                          ? 'border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold shadow-xs'
+                          : 'border-[#E5DFD5] bg-white text-[#555555] dark:border-[#3A0F34] dark:bg-[#16061D] dark:text-slate-300 hover:bg-[#FAF8F5] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1] shadow-2xs'
                       }`}
                     >
                       {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-[#EAAA00] dark:text-[#120516]" />}
@@ -716,10 +719,10 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                       setConfig({ ...config, questionCount: preset.count });
                       if (errorMessage) setErrorMessage(null);
                     }}
-                    className={`text-left p-4 border transition-all cursor-pointer flex flex-col justify-between rounded-none ${
+                    className={`text-left p-5 border transition-all duration-200 cursor-pointer flex flex-col justify-between rounded-2xl ${
                       isSelected
-                        ? 'border-[#3A0F34] bg-[#FAF8F5] dark:border-[#EAAA00] dark:bg-[#250C3D]'
-                        : 'border-[#E5DFD5] bg-[#F8F6F1]/70 dark:border-[#3A0F34]/50 dark:bg-[#16061D]/70 hover:border-[#3A0F34]/50 dark:hover:border-[#EAAA00]/50 hover:bg-white dark:hover:bg-[#250C3D]/40'
+                        ? 'border-[#3A0F34] ring-2 ring-[#3A0F34] dark:ring-[#EAAA00] dark:border-[#EAAA00] bg-white dark:bg-[#1E082B] shadow-sm'
+                        : 'border-[#E5DFD5] bg-white/80 dark:border-[#3A0F34]/50 dark:bg-[#16061D]/80 hover:border-[#3A0F34]/40 dark:hover:border-[#EAAA00]/40 hover:bg-white dark:hover:bg-[#20092E]/40 hover:-translate-y-0.5 hover:shadow-xs'
                     }`}
                   >
                     <div>
@@ -736,12 +739,12 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                       </p>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50">
+                    <div className="mt-4 flex items-center justify-between pt-2.5 border-t border-[#E5DFD5]/80 dark:border-[#3A0F34]/40">
                       <span className="font-mono text-xs font-bold text-[#111111] dark:text-[#F8F6F1]">
                         {preset.count} Technical Challenges
                       </span>
                       {preset.recommended && (
-                        <span className="text-[10px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-[#EAAA00]/20 dark:bg-[#EAAA00]/20 px-2 py-0.5 border border-[#EAAA00]/40">
+                        <span className="text-[10px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-[#EAAA00]/20 dark:bg-[#EAAA00]/20 px-2.5 py-0.5 rounded-full border border-[#EAAA00]/40">
                           Recommended
                         </span>
                       )}
@@ -753,7 +756,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
           </div>
 
           {/* 4. Architectural Launch Station */}
-          <div className="px-4 sm:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 bg-[#FAF8F5]/60 dark:bg-[#16061D]/80 backdrop-blur-xs transition-colors">
+          <div className="px-4 sm:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 bg-[#FAF8F5]/80 dark:bg-[#16061D]/80 backdrop-blur-xs transition-colors">
             <div className="flex items-center gap-3 text-xs text-[#555555] dark:text-slate-300 font-sans">
               <ShieldCheck className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00] shrink-0" />
               <span>Full session persistence with executive post-interview dossier and 4D rubric report.</span>
@@ -762,7 +765,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
             <button
               type="submit"
               disabled={launchStage === 'validating' || launchStage === 'starting'}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-none bg-[#3A0F34] hover:bg-[#2A0B26] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] px-8 py-4 text-xs font-mono uppercase tracking-wider font-bold text-white dark:text-[#120516] shadow-sm active:scale-[0.99] transition-all cursor-pointer border border-[#3A0F34] dark:border-[#EAAA00]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#3A0F34] via-[#52174A] to-[#3A0F34] hover:from-[#2E0B29] hover:via-[#42113B] hover:to-[#2E0B29] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] px-9 py-4 text-xs font-mono uppercase tracking-wider font-bold text-white dark:text-[#120516] shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer border border-[#3A0F34]/30 dark:border-[#EAAA00]"
             >
               {launchStage === 'validating' ? (
                 <>
@@ -823,10 +826,10 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setChallengeCategory(tab.id)}
-                  className={`px-3 py-1 text-[11px] border uppercase tracking-wider transition cursor-pointer ${
+                  className={`px-3.5 py-1 rounded-full text-[11px] border uppercase tracking-wider transition-all cursor-pointer ${
                     challengeCategory === tab.id
-                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold'
-                      : 'bg-white text-[#7A7875] border-[#E5DFD5] dark:bg-[#16061D] dark:text-slate-400 dark:border-[#3A0F34] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold shadow-xs'
+                      : 'bg-white text-[#7A7875] border-[#E5DFD5] dark:bg-[#16061D] dark:text-slate-400 dark:border-[#3A0F34] hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:border-slate-300'
                   }`}
                 >
                   {tab.label}
@@ -835,7 +838,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {CURATED_CHALLENGES.filter((ch) => {
               if (challengeCategory === 'all') return true;
               if (challengeCategory === 'distributed') return ch.domainShort === 'Distributed Systems';
@@ -846,19 +849,18 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
             }).map((ch) => (
               <div
                 key={ch.id}
-                className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col justify-between hover:border-[#3A0F34] dark:hover:border-[#EAAA00]/70 transition-all group"
+                className="relative p-6 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] rounded-2xl flex flex-col justify-between hover:border-[#3A0F34]/50 dark:hover:border-[#EAAA00]/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group shadow-xs"
               >
-                <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-2.5">
-                    <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#EAAA00]">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-[10px] font-mono font-semibold uppercase px-2.5 py-0.5 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#EAAA00]">
                       {ch.domainShort}
                     </span>
                     <div className="flex items-center gap-1.5 font-mono text-[10px]">
-                      <span className="px-1.5 py-0.5 bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-bold">
+                      <span className="px-2 py-0.5 rounded-md bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-bold">
                         {ch.difficulty}
                       </span>
-                      <span className="px-1.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] text-[#555555] dark:text-slate-300 dark:bg-[#120516]">
+                      <span className="px-2 py-0.5 rounded-md border border-[#E5DFD5] dark:border-[#3A0F34] text-[#555555] dark:text-slate-300 dark:bg-[#120516]">
                         {ch.language}
                       </span>
                     </div>
@@ -871,16 +873,16 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                     {ch.summary}
                   </p>
 
-                  <div className="mt-3.5 flex flex-wrap gap-1 font-mono text-[9px] text-[#7A7875] dark:text-slate-400">
+                  <div className="mt-4 flex flex-wrap gap-1 font-mono text-[9px] text-[#7A7875] dark:text-slate-400">
                     {ch.keyTopics.map((k) => (
-                      <span key={k} className="px-1.5 py-0.5 bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                      <span key={k} className="px-2 py-0.5 rounded-md bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
                         {k}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 flex items-center justify-between">
+                <div className="mt-5 pt-3.5 border-t border-[#E5DFD5]/80 dark:border-[#3A0F34]/40 flex items-center justify-between">
                   <span className="text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
                     {ch.rubricWeight}
                   </span>
@@ -888,7 +890,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                     type="button"
                     disabled={launchStage === 'validating' || launchStage === 'starting'}
                     onClick={() => handleQuickLaunchChallenge(ch)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3A0F34] hover:bg-[#2A0B26] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] text-white dark:text-[#120516] text-[11px] font-mono font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#3A0F34] to-[#55164D] hover:from-[#2E0B29] hover:to-[#45103E] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] text-white dark:text-[#120516] text-[11px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 disabled:opacity-50"
                   >
                     <span>Practice</span>
                     <ArrowRight className="h-3 w-3 text-[#EAAA00] dark:text-[#120516]" />
@@ -921,14 +923,13 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Dimension 1: Correctness (40%) */}
-            <div className="relative p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1]/70 dark:bg-[#16061D]/70 rounded-none">
-              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+            <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white/80 dark:bg-[#16061D]/80 rounded-2xl shadow-xs transition-all hover:shadow-sm">
               <div className="flex items-baseline justify-between mb-2">
                 <span className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Technical Correctness</span>
                 <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">40%</span>
               </div>
-              <div className="h-1.5 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-none overflow-hidden">
-                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: '40%' }}></div>
+              <div className="h-2 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
+                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: '40%' }}></div>
               </div>
               <p className="text-[11px] text-[#555555] dark:text-slate-300 mt-2.5 leading-snug font-sans">
                 Algorithmic validity, structural soundness, and asymptotic bounds.
@@ -936,14 +937,13 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
             </div>
 
             {/* Dimension 2: Depth (25%) */}
-            <div className="relative p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1]/70 dark:bg-[#16061D]/70 rounded-none">
-              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+            <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white/80 dark:bg-[#16061D]/80 rounded-2xl shadow-xs transition-all hover:shadow-sm">
               <div className="flex items-baseline justify-between mb-2">
                 <span className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Architectural Depth</span>
                 <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">25%</span>
               </div>
-              <div className="h-1.5 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-none overflow-hidden">
-                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: '25%' }}></div>
+              <div className="h-2 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
+                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: '25%' }}></div>
               </div>
               <p className="text-[11px] text-[#555555] dark:text-slate-300 mt-2.5 leading-snug font-sans">
                 Concurrency, component isolation, trade-offs, and scalability resilience.
@@ -951,14 +951,13 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
             </div>
 
             {/* Dimension 3: Edge Cases (20%) */}
-            <div className="relative p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1]/70 dark:bg-[#16061D]/70 rounded-none">
-              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+            <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white/80 dark:bg-[#16061D]/80 rounded-2xl shadow-xs transition-all hover:shadow-sm">
               <div className="flex items-baseline justify-between mb-2">
                 <span className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Edge Cases & Scale</span>
                 <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">20%</span>
               </div>
-              <div className="h-1.5 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-none overflow-hidden">
-                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: '20%' }}></div>
+              <div className="h-2 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
+                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: '20%' }}></div>
               </div>
               <p className="text-[11px] text-[#555555] dark:text-slate-300 mt-2.5 leading-snug font-sans">
                 Failure mode mitigation, lock contention, and boundary verification.
@@ -966,14 +965,13 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
             </div>
 
             {/* Dimension 4: Communication (15%) */}
-            <div className="relative p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1]/70 dark:bg-[#16061D]/70 rounded-none">
-              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+            <div className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white/80 dark:bg-[#16061D]/80 rounded-2xl shadow-xs transition-all hover:shadow-sm">
               <div className="flex items-baseline justify-between mb-2">
                 <span className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Communication Clarity</span>
                 <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">15%</span>
               </div>
-              <div className="h-1.5 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-none overflow-hidden">
-                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: '15%' }}></div>
+              <div className="h-2 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
+                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: '15%' }}></div>
               </div>
               <p className="text-[11px] text-[#555555] dark:text-slate-300 mt-2.5 leading-snug font-sans">
                 Structured explanations, clean rationale, and collaborative dialogue.
