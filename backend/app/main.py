@@ -10,6 +10,8 @@ import app.db.session as db_session
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan context for startup and graceful shutdown."""
+    # Enforce production security requirements at application startup
+    settings.validate_production_security()
     yield
     # Graceful shutdown: dispose of active SQLAlchemy engine connection pool
     if db_session._engine is not None:

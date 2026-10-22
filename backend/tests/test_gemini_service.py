@@ -243,7 +243,7 @@ async def test_generate_interview_question_missing_fields_raises_validation_erro
 
 @pytest.mark.anyio
 async def test_generate_interview_question_network_error(monkeypatch):
-    """When a network error occurs, raise GeminiProviderError."""
+    """When a network error occurs and allow_offline is False, raise GeminiProviderError."""
     monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
 
     async def mock_post(url, headers=None, json=None):
@@ -259,9 +259,160 @@ async def test_generate_interview_question_network_error(monkeypatch):
             primary_language=CodingLanguage.PYTHON,
             question_number=1,
             client=mock_client,
+            allow_offline=False,
         )
 
     assert "Network connectivity error" in str(exc_info.value)
+
+
+@pytest.mark.anyio
+async def test_generate_interview_question_network_error_falls_back_when_offline_allowed(monkeypatch):
+    """When a network error occurs and allow_offline is True, safely fall back to offline catalog."""
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
+
+    async def mock_post(url, headers=None, json=None):
+        raise httpx.ConnectTimeout("Connection timed out after 30s")
+
+    mock_client = httpx.AsyncClient()
+    monkeypatch.setattr(mock_client, "post", mock_post)
+
+    question = await generate_interview_question(
+        role="Distributed Systems Architect",
+        difficulty=SeniorityLevel.SENIOR,
+        primary_language=CodingLanguage.PYTHON,
+        question_number=2,
+        client=mock_client,
+        allow_offline=True,
+    )
+
+    assert isinstance(question, InterviewQuestionSchema)
+    assert question.question_number == 2
+    assert question.difficulty == SeniorityLevel.SENIOR
+    assert "Stream Ingestion" in question.topic
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("status_code", [502, 503, 504])
+async def test_generate_interview_question_502_503_504_falls_back_when_offline_allowed(monkeypatch, status_code):
+    """When Gemini returns transient 502/503/504 and allow_offline is True, safely fall back to offline catalog."""
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
+
+    error_body = json.dumps({
+        "error": {
+            "code": status_code,
+            "message": "The model is currently experiencing high demand. Please try again later.",
+            "status": "UNAVAILABLE",
+        }
+    }).encode("utf-8")
+
+    async def mock_post(url, headers=None, json=None):
+        return httpx.Response(status_code, content=error_body, request=httpx.Request("POST", url))
+
+    mock_client = httpx.AsyncClient()
+    monkeypatch.setattr(mock_client, "post", mock_post)
+
+    question = await generate_interview_question(
+        role="Core Java Engineer",
+        difficulty=SeniorityLevel.MID,
+        primary_language=CodingLanguage.JAVA,
+        question_number=1,
+        client=mock_client,
+        allow_offline=True,
+    )
+
+    assert isinstance(question, InterviewQuestionSchema)
+    assert question.question_number == 1
+    assert question.difficulty == SeniorityLevel.MID
+    assert "Thread Safety" in question.topic
+    assert "DistributedRateLimiter" in question.starter_code
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("status_code", [502, 503, 504])
+async def test_generate_interview_question_502_503_504_raises_provider_error_when_offline_disabled(monkeypatch, status_code):
+    """When Gemini returns transient 502/503/504 and allow_offline is False, raise GeminiProviderError."""
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
+
+    async def mock_post(url, headers=None, json=None):
+        return httpx.Response(status_code, text="Service Unavailable", request=httpx.Request("POST", url))
+
+    mock_client = httpx.AsyncClient()
+    monkeypatch.setattr(mock_client, "post", mock_post)
+
+    with pytest.raises(GeminiProviderError) as exc_info:
+        await generate_interview_question(
+            role="Core Java Engineer",
+            difficulty=SeniorityLevel.MID,
+            primary_language=CodingLanguage.JAVA,
+            question_number=1,
+            client=mock_client,
+            allow_offline=False,
+        )
+
+    assert f"HTTP {status_code}" in str(exc_info.value)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("status_code", [400, 401, 403, 404])
+async def test_generate_interview_question_permanent_4xx_does_not_fall_back(monkeypatch, status_code):
+    """Permanent client errors (400, 401, 403, 404) must raise GeminiProviderError and NEVER fall back, even when allow_offline is True."""
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
+
+    async def mock_post(url, headers=None, json=None):
+        return httpx.Response(status_code, text=f"Client Error {status_code}", request=httpx.Request("POST", url))
+
+    mock_client = httpx.AsyncClient()
+    monkeypatch.setattr(mock_client, "post", mock_post)
+
+    with pytest.raises(GeminiProviderError) as exc_info:
+        await generate_interview_question(
+            role="Data Engineer",
+            difficulty=SeniorityLevel.STAFF,
+            primary_language=CodingLanguage.SQL,
+            question_number=1,
+            client=mock_client,
+            allow_offline=True,  # Even with allow_offline=True, permanent client errors must not fall back
+        )
+
+    assert f"HTTP {status_code}" in str(exc_info.value)
+
+
+def test_offline_mock_question_unsupported_language_raises_provider_error():
+    """Verify that requesting an offline question for an unsupported language or empty catalog raises GeminiProviderError."""
+    with pytest.raises(GeminiProviderError) as exc_info:
+        generate_offline_mock_question(
+            role="Systems Engineer",
+            difficulty=SeniorityLevel.SENIOR,
+            primary_language="Rust",  # Not in CodingLanguage enum
+            question_number=1,
+        )
+
+    assert "No suitable offline mock question found in catalog" in str(exc_info.value)
+    assert "Rust" in str(exc_info.value)
+
+
+@pytest.mark.anyio
+async def test_generate_interview_question_offline_catalog_empty_propagates_error(monkeypatch):
+    """When upstream fails with 503 and fallback is triggered, but catalog has no suitable question, propagate GeminiProviderError."""
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
+
+    async def mock_post(url, headers=None, json=None):
+        return httpx.Response(503, text="Overloaded", request=httpx.Request("POST", url))
+
+    mock_client = httpx.AsyncClient()
+    monkeypatch.setattr(mock_client, "post", mock_post)
+
+    with pytest.raises(GeminiProviderError) as exc_info:
+        await generate_interview_question(
+            role="Rust Developer",
+            difficulty=SeniorityLevel.SENIOR,
+            primary_language="Rust",  # No catalog exists for Rust
+            question_number=1,
+            client=mock_client,
+            allow_offline=True,
+        )
+
+    assert "No suitable offline mock question found in catalog" in str(exc_info.value)
 
 
 @pytest.mark.anyio
@@ -289,11 +440,42 @@ async def test_generate_interview_question_429_exhausted_raises_quota_error(monk
             primary_language=CodingLanguage.PYTHON,
             question_number=1,
             client=mock_client,
+            allow_offline=False,
         )
 
     assert exc_info.value.retry_after == 8.0
     assert "rate limit exceeded" in str(exc_info.value).lower()
     assert "429" in str(exc_info.value)
+
+
+@pytest.mark.anyio
+async def test_generate_interview_question_429_exhausted_falls_back_when_offline_allowed(monkeypatch):
+    """When GEMINI_API_KEY is configured but Gemini returns 429, fall back to offline catalog if allow_offline=True."""
+    import asyncio
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "configured-secret-key")
+    monkeypatch.setattr(asyncio, "sleep", AsyncMock())
+
+    async def mock_post(url, headers=None, json=None):
+        return httpx.Response(
+            429,
+            content=b'{"error": {"code": 429, "message": "Resource has been exhausted", "status": "RESOURCE_EXHAUSTED"}}',
+            request=httpx.Request("POST", url),
+        )
+
+    mock_client = httpx.AsyncClient()
+    monkeypatch.setattr(mock_client, "post", mock_post)
+
+    question = await generate_interview_question(
+        role="Distributed Systems Engineer",
+        difficulty=SeniorityLevel.SENIOR,
+        primary_language=CodingLanguage.PYTHON,
+        question_number=1,
+        client=mock_client,
+        allow_offline=True,
+    )
+    assert isinstance(question, InterviewQuestionSchema)
+    assert question.question_number == 1
+    assert "Distributed Concurrency" in question.topic
 
 
 @pytest.mark.anyio

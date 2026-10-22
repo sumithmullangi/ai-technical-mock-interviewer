@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -25,13 +26,26 @@
 @theme {
   --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-serif: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, Cambria, 'Times New Roman', serif;
+  --font-didone: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, serif;
 }
 
-/* 3. Base Typographic Hierarchy & Settings */
+/* 3. Base Typographic Hierarchy & Precision Architectural Grid */
 @layer base {
   :root {
     --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-serif: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, Cambria, 'Times New Roman', serif;
+    --font-didone: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, serif;
+
+    /* Editorial Palette */
+    --color-ivory: #F8F6F1;
+    --color-ivory-elevated: #FAF8F5;
+    --color-aubergine: #3A0F34;
+    --color-marigold: #EAAA00;
+    --color-silver: #DDE3E8;
+    --color-grid: #E5DFD5;
+    --color-ink: #111111;
   }
 
   html {
@@ -42,25 +56,37 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: #F8F6F1;
+    /* Precise architectural dual-cadence grid lines across entire page */
+    background-image: 
+      linear-gradient(to right, rgba(58, 40, 20, 0.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(58, 40, 20, 0.055) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: center top;
+    background-attachment: fixed;
+    color: #111111;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     line-height: 1.6;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   html.dark body {
-    background-color: #020617;
-    color: #f8fafc;
+    background-color: #140718;
+    background-image: 
+      linear-gradient(to right, rgba(221, 227, 232, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(221, 227, 232, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: center top;
+    background-attachment: fixed;
+    color: #F8F6F1;
   }
 
   /* Headings with deliberate line-height and proportional tracking */
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-sans);
     text-wrap: balance;
   }
 
@@ -75,4 +101,274 @@
 .tabular-nums {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
+}
+
+/* 5. Editorial Didone Serif Font Utility */
+.font-didone,
+.font-serif {
+  font-family: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, serif;
+  font-optical-sizing: auto;
+  font-feature-settings: 'opsz' 96, 'kern' 1, 'liga' 1;
+}
+
+/* 6. Architectural Grid Layout Utilities */
+/* Continuous vertical guide lines container */
+.editorial-frame {
+  position: relative;
+  width: 100%;
+  max-width: 1360px;
+  margin-left: auto;
+  margin-right: auto;
+  border-left: 1px solid #E5DFD5;
+  border-right: 1px solid #E5DFD5;
+}
+
+html.dark .editorial-frame {
+  border-color: rgba(58, 15, 52, 0.6);
+}
+
+/* Section dividers and full-width datum lines */
+.editorial-divider {
+  border-top: 1px solid #E5DFD5;
+}
+
+html.dark .editorial-divider {
+  border-color: rgba(58, 15, 52, 0.6);
+}
+
+/* Translucent Editorial Cell (grid shows through) */
+.editorial-surface {
+  background-color: rgba(248, 246, 241, 0.72);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border: 1px solid #E5DFD5;
+}
+
+html.dark .editorial-surface {
+  background-color: rgba(20, 7, 24, 0.72);
+  border-color: rgba(58, 15, 52, 0.6);
+}
+
+.editorial-surface-elevated {
+  background-color: rgba(250, 248, 245, 0.88);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid #E5DFD5;
+}
+
+html.dark .editorial-surface-elevated {
+  background-color: rgba(26, 8, 38, 0.88);
+  border-color: rgba(58, 15, 52, 0.6);
+}
+
+/* Precision Grid Crosshair Markers */
+.editorial-crosshair {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  color: #111111;
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
+html.dark .editorial-crosshair {
+  color: #DDE3E8;
+  opacity: 0.45;
+}
+
+/* Selective Restrained Ambient Glow Behind Large Editorial Typography */
+.editorial-aura {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.16;
+  z-index: 0;
+  will-change: transform, opacity;
+}
+
+.editorial-aura-aubergine {
+  background: radial-gradient(circle, #3A0F34 0%, rgba(58, 15, 52, 0) 70%);
+}
+
+.editorial-aura-marigold {
+  background: radial-gradient(circle, #EAAA00 0%, rgba(234, 170, 0, 0) 70%);
+}
+
+/* Specimen metadata badge */
+.editorial-specimen-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #7A7875;
+}
+
+/* 7. MOCKINTERVIEW Two-Line Wordmark & Translucent Horizontal Echoes */
+.intro-main-mock {
+  animation: mockinterviewLineMock 1.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, letter-spacing;
+}
+
+.intro-main-interview {
+  animation: mockinterviewLineInterview 1.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, letter-spacing;
+}
+
+.intro-echo {
+  will-change: transform, opacity, letter-spacing;
+  pointer-events: none;
+}
+
+.intro-echo-1 {
+  animation: mockinterviewEchoOne 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.intro-echo-2 {
+  animation: mockinterviewEchoTwo 1.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.intro-echo-3 {
+  animation: mockinterviewEchoThree 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.intro-echo-4 {
+  animation: mockinterviewEchoFour 1.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes mockinterviewLineMock {
+  0% {
+    opacity: 0;
+    transform: translate3d(-30px, 0, 0);
+    letter-spacing: 0.32em;
+    filter: blur(0.5px);
+  }
+  30% {
+    opacity: 0.9;
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    letter-spacing: 0.22em;
+    filter: blur(0px);
+  }
+}
+
+@keyframes mockinterviewLineInterview {
+  0% {
+    opacity: 0;
+    transform: translate3d(-36px, 0, 0);
+    letter-spacing: 0.24em;
+    filter: blur(0.5px);
+  }
+  30% {
+    opacity: 0.9;
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    letter-spacing: 0.14em;
+    filter: blur(0px);
+  }
+}
+
+@keyframes mockinterviewEchoOne {
+  0% {
+    opacity: 0;
+    transform: translate3d(-18px, 0, 0);
+  }
+  30% {
+    opacity: 0.45;
+  }
+  70% {
+    opacity: 0.18;
+    transform: translate3d(-4px, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes mockinterviewEchoTwo {
+  0% {
+    opacity: 0;
+    transform: translate3d(-40px, 0, 0);
+  }
+  30% {
+    opacity: 0.32;
+  }
+  70% {
+    opacity: 0.10;
+    transform: translate3d(-10px, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes mockinterviewEchoThree {
+  0% {
+    opacity: 0;
+    transform: translate3d(-68px, 0, 0);
+  }
+  30% {
+    opacity: 0.20;
+  }
+  65% {
+    opacity: 0.05;
+    transform: translate3d(-18px, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes mockinterviewEchoFour {
+  0% {
+    opacity: 0;
+    transform: translate3d(-102px, 0, 0);
+  }
+  25% {
+    opacity: 0.14;
+  }
+  60% {
+    opacity: 0.02;
+    transform: translate3d(-28px, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 8. Accessibility: prefers-reduced-motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  .intro-main-mock,
+  .intro-main-interview,
+  .intro-main-title {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  .intro-echo {
+    display: none !important;
+    animation: none !important;
+  }
+  .editorial-aura {
+    display: none !important;
+  }
 }

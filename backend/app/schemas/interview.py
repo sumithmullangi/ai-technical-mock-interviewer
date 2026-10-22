@@ -839,6 +839,10 @@ class InterviewConfigResponse(BaseModel):
         default="Interview configuration validated successfully.",
         description="Confirmation message from the server",
     )
+    user_id: Optional[str] = Field(
+        default=None,
+        description="Owner user ID if associated with a candidate account",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when configuration was processed",

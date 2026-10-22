@@ -45,8 +45,8 @@ export interface StartedSessionData {
   status: 'in_progress' | 'configured' | 'completed';
   session_id: string;
   sessionId?: string;
-  current_question: InterviewQuestion;
-  currentQuestion?: InterviewQuestion;
+  current_question?: InterviewQuestion | null;
+  currentQuestion?: InterviewQuestion | null;
   message: string;
   started_at: string;
   startedAt?: string;

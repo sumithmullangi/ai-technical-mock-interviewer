@@ -7,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.api.deps import get_current_user, get_optional_current_user
+from app.models.user import UserModel
 from app.models.interview import (
     AnswerEvaluationModel,
     CandidateAnswerModel,
@@ -38,6 +40,7 @@ from app.schemas.interview import (
     SessionStatus,
     calculate_weighted_overall_score,
 )
+import logging
 from app.core.config import settings
 from app.services.gemini_service import (
     GeminiProviderError,
@@ -47,13 +50,41 @@ from app.services.gemini_service import (
     evaluate_candidate_answer,
     generate_follow_up_question,
     generate_interview_question,
+    generate_offline_mock_question,
     generate_report_narrative,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
+def verify_session_access(
+    session_record: InterviewSessionModel,
+    current_user: Optional[UserModel],
+) -> None:
+    """Verifies that the current user has permission to access the interview session.
 
+    Rules:
+    - If session_record.user_id is None (guest or legacy session created prior to auth),
+      access is permitted to ensure backward compatibility.
+    - If session_record.user_id is set:
+      - If current_user is None: 401 UNAUTHORIZED (Authentication required).
+      - If current_user.id != session_record.user_id: 403 FORBIDDEN.
+    """
+    session_user_id = getattr(session_record, "user_id", None)
+    if isinstance(session_user_id, str) and session_user_id:
+        if current_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required to access this interview session.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if current_user.id != session_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: You do not have permission to access this interview session.",
+            )
 
 
 @router.post(
@@ -65,6 +96,7 @@ router = APIRouter()
 async def configure_interview(
     config: InterviewConfigCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> InterviewConfigResponse:
     """Validates candidate interview configuration and persists the session to PostgreSQL.
 
@@ -74,6 +106,7 @@ async def configure_interview(
     - Coding language is one of Python, Java, SQL.
     - Question count is strictly bounded between 3 and 10.
     - Session is saved to PostgreSQL in 'configured' state with transactional safety.
+    - Associates authenticated user_id if present.
     """
     session_id = f"mock-{uuid.uuid4().hex[:12]}"
     created_at = datetime.now(timezone.utc)
@@ -81,6 +114,7 @@ async def configure_interview(
     # Persist the session in PostgreSQL
     session_record = InterviewSessionModel(
         id=session_id,
+        user_id=current_user.id if current_user else None,
         role=config.role,
         difficulty=config.difficulty.value if hasattr(config.difficulty, "value") else str(config.difficulty),
         primary_language=config.primary_language.value if hasattr(config.primary_language, "value") else str(config.primary_language),
@@ -103,10 +137,48 @@ async def configure_interview(
     return InterviewConfigResponse(
         status=session_record.status,
         session_id=session_record.id,
+        user_id=session_record.user_id,
         config=config,
         message="Interview configuration validated and persisted successfully. Ready for session initiation.",
         created_at=session_record.created_at,
     )
+
+
+@router.get(
+    "/history",
+    response_model=List[InterviewConfigResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve interview history for the authenticated user",
+)
+async def list_user_interview_history(
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+) -> List[InterviewConfigResponse]:
+    """Retrieves all interview sessions belonging to the authenticated user, ordered newest first."""
+    stmt = (
+        select(InterviewSessionModel)
+        .where(InterviewSessionModel.user_id == current_user.id)
+        .order_by(InterviewSessionModel.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    sessions = result.scalars().all()
+
+    return [
+        InterviewConfigResponse(
+            status=s.status,
+            session_id=s.id,
+            user_id=s.user_id,
+            config=InterviewConfigCreate(
+                role=s.role,
+                difficulty=SeniorityLevel(s.difficulty),
+                primary_language=CodingLanguage(s.primary_language),
+                question_count=s.question_count,
+            ),
+            message="Interview session retrieved from history.",
+            created_at=s.created_at,
+        )
+        for s in sessions
+    ]
 
 
 @router.get(
@@ -118,6 +190,7 @@ async def configure_interview(
 async def get_interview_session(
     session_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> InterviewConfigResponse:
     """Retrieves an existing interview session from PostgreSQL by session ID."""
     query = select(InterviewSessionModel).where(InterviewSessionModel.id == session_id)
@@ -130,6 +203,8 @@ async def get_interview_session(
             detail=f"Interview session '{session_id}' not found.",
         )
 
+    verify_session_access(session_record, current_user)
+
     # Reconstruct the config schema
     reconstructed_config = InterviewConfigCreate(
         role=session_record.role,
@@ -141,6 +216,7 @@ async def get_interview_session(
     return InterviewConfigResponse(
         status=session_record.status,
         session_id=session_record.id,
+        user_id=session_record.user_id,
         config=reconstructed_config,
         message="Interview session retrieved successfully.",
         created_at=session_record.created_at,
@@ -156,6 +232,7 @@ async def get_interview_session(
 async def start_interview_session(
     session_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> SessionStartResponse:
     """Transitions a configured interview session to 'in_progress' and generates Question 1.
 
@@ -179,6 +256,8 @@ async def start_interview_session(
             detail=f"Interview session '{session_id}' not found.",
         )
 
+    verify_session_access(session_record, current_user)
+
     if session_record.status != SessionStatus.CONFIGURED.value:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -188,17 +267,19 @@ async def start_interview_session(
             ),
         )
 
-    # Generate Question 1 via Gemini service (or deterministic offline mock if unconfigured)
+    # Generate Question 1 via Gemini service (or deterministic offline mock if quota exceeded / unconfigured / unavailable)
     try:
         first_question = await generate_interview_question(
             role=session_record.role,
             difficulty=SeniorityLevel(session_record.difficulty),
             primary_language=CodingLanguage(session_record.primary_language),
             question_number=1,
+            allow_offline=True,
         )
     except GeminiQuotaExceededError as exc:
         await db.rollback()
-        headers = {"Retry-After": str(int(exc.retry_after or 5))}
+        retry_delay = int(exc.retry_after or (3600 if getattr(exc, "is_quota_exhausted", False) else 5))
+        headers = {"Retry-After": str(retry_delay)}
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"AI rate limit exceeded during session start: {str(exc)}",
@@ -206,9 +287,10 @@ async def start_interview_session(
         ) from exc
     except GeminiServiceError as exc:
         await db.rollback()
+        msg = getattr(exc, "message", None) or str(exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"AI Question generation failed: {type(exc).__name__}",
+            detail=f"AI Question generation failed: {msg}",
         ) from exc
     except Exception as exc:
         await db.rollback()
@@ -262,6 +344,7 @@ async def submit_candidate_answer(
     session_id: str,
     request: AnswerSubmitRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> AnswerSubmitResponse:
     """Submits and persists candidate answer text or code to PostgreSQL.
 
@@ -280,6 +363,8 @@ async def submit_candidate_answer(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session '{session_id}' not found.",
         )
+
+    verify_session_access(session_record, current_user)
 
     if session_record.status != SessionStatus.IN_PROGRESS.value:
         raise HTTPException(
@@ -348,6 +433,7 @@ async def evaluate_persisted_answer(
     answer_id: Optional[str] = None,
     request: Optional[AnswerEvaluationRequest] = None,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> AnswerEvaluationResponse:
     """Evaluates an already-persisted answer using Gemini AI and stores the evaluation.
 
@@ -376,6 +462,8 @@ async def evaluate_persisted_answer(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session '{session_id}' not found.",
         )
+
+    verify_session_access(session_record, current_user)
 
     # 2. Verify answer exists and belongs to session
     answer_stmt = select(CandidateAnswerModel).where(CandidateAnswerModel.id == target_answer_id)
@@ -421,10 +509,18 @@ async def evaluate_persisted_answer(
             answer_text=answer_record.answer_text,
         )
     except GeminiQuotaExceededError as exc:
-        headers = {"Retry-After": str(int(exc.retry_after or 5))}
+        retry_delay = int(exc.retry_after or (3600 if getattr(exc, "is_quota_exhausted", False) else 5))
+        headers = {"Retry-After": str(retry_delay)}
+        if getattr(exc, "is_quota_exhausted", False):
+            msg = (
+                "AI evaluation quota exhausted: Live AI evaluation is temporarily unavailable due to Gemini API daily quota limits. "
+                "Your answer has been safely recorded. You can proceed directly to the next question."
+            )
+        else:
+            msg = f"AI evaluation rate limit exceeded. Please wait a few seconds before retrying: {str(exc)}"
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"AI evaluation rate limit exceeded. Please wait a few seconds before retrying: {str(exc)}",
+            detail=msg,
             headers=headers,
         ) from exc
     except GeminiProviderError as exc:
@@ -515,6 +611,7 @@ async def request_follow_up_question(
     question_number: Optional[int] = None,
     request: Optional[FollowUpQuestionRequest] = None,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> FollowUpQuestionResponse:
     """Generates and persists an adaptive technical follow-up question for a primary question.
 
@@ -545,6 +642,8 @@ async def request_follow_up_question(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session '{session_id}' not found.",
         )
+
+    verify_session_access(session_record, current_user)
 
     if session_record.status != SessionStatus.IN_PROGRESS.value:
         raise HTTPException(
@@ -648,10 +747,18 @@ async def request_follow_up_question(
             missing_concepts=missing_concepts,
         )
     except GeminiQuotaExceededError as exc:
-        headers = {"Retry-After": str(int(exc.retry_after or 5))}
+        retry_delay = int(exc.retry_after or (3600 if getattr(exc, "is_quota_exhausted", False) else 5))
+        headers = {"Retry-After": str(retry_delay)}
+        if getattr(exc, "is_quota_exhausted", False):
+            msg = (
+                "AI follow-up quota exhausted: Live adaptive follow-up generation is temporarily unavailable due to Gemini API daily quota limits. "
+                "You can proceed directly to the next question."
+            )
+        else:
+            msg = f"AI follow-up rate limit exceeded. Please wait a few seconds before retrying: {str(exc)}"
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"AI follow-up rate limit exceeded. Please wait a few seconds before retrying: {str(exc)}",
+            detail=msg,
             headers=headers,
         ) from exc
     except GeminiProviderError as exc:
@@ -726,6 +833,7 @@ async def submit_follow_up_answer(
     follow_up_id: str,
     request: FollowUpAnswerRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> FollowUpAnswerResponse:
     """Submits and persists a candidate's answer for an adaptive follow-up question."""
     session_stmt = select(InterviewSessionModel).where(InterviewSessionModel.id == session_id)
@@ -736,6 +844,8 @@ async def submit_follow_up_answer(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session '{session_id}' not found.",
         )
+
+    verify_session_access(session_record, current_user)
 
     if session_record.status != SessionStatus.IN_PROGRESS.value:
         raise HTTPException(
@@ -793,8 +903,19 @@ async def list_follow_up_questions(
     session_id: str,
     question_number: int,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> List[FollowUpQuestionResponse]:
     """Retrieves all generated follow-up questions and answers for a primary question."""
+    session_stmt = select(InterviewSessionModel).where(InterviewSessionModel.id == session_id)
+    session_result = await db.execute(session_stmt)
+    session_record = session_result.scalar_one_or_none()
+    if session_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session '{session_id}' not found.",
+        )
+
+    verify_session_access(session_record, current_user)
     stmt = (
         select(FollowUpQuestionModel)
         .where(
@@ -838,6 +959,7 @@ async def list_follow_up_questions(
 async def advance_interview_question(
     session_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> SessionAdvanceResponse:
     """Backend-authoritative progression to the next primary question or interview completion.
 
@@ -863,6 +985,8 @@ async def advance_interview_question(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session '{session_id}' not found.",
         )
+
+    verify_session_access(session_record, current_user)
 
     if session_record.status == SessionStatus.COMPLETED.value:
         raise HTTPException(
@@ -967,10 +1091,11 @@ async def advance_interview_question(
             primary_language=CodingLanguage(session_record.primary_language),
             question_number=next_q_num,
             previous_topics=previous_topics,
-            allow_offline=(settings.GEMINI_API_KEY is None or not settings.GEMINI_API_KEY.strip()),
+            allow_offline=True,
         )
     except GeminiQuotaExceededError as exc:
-        headers = {"Retry-After": str(int(exc.retry_after or 5))}
+        retry_delay = int(exc.retry_after or (3600 if getattr(exc, "is_quota_exhausted", False) else 5))
+        headers = {"Retry-After": str(retry_delay)}
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"AI rate limit exceeded during question progression: {str(exc)}",
@@ -1043,6 +1168,7 @@ async def advance_interview_question(
 async def list_primary_questions(
     session_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> List[PrimaryQuestionResponse]:
     """Retrieves all generated primary questions for a session in order."""
     session_stmt = select(InterviewSessionModel).where(InterviewSessionModel.id == session_id)
@@ -1053,6 +1179,8 @@ async def list_primary_questions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session '{session_id}' not found.",
         )
+
+    verify_session_access(session_record, current_user)
 
     stmt = (
         select(PrimaryQuestionModel)
@@ -1093,6 +1221,7 @@ async def get_or_generate_interview_report(
     session_id: str,
     refresh: bool = False,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
 ) -> InterviewReportResponse:
     """Retrieves or synthesizes the final aggregated report for a completed interview.
 
@@ -1114,6 +1243,8 @@ async def get_or_generate_interview_report(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session '{session_id}' not found.",
         )
+
+    verify_session_access(session_record, current_user)
 
     if session_record.status != SessionStatus.COMPLETED.value:
         raise HTTPException(

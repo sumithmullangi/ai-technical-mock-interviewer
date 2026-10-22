@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 from typing import Any, Dict, List, Optional, Tuple
 import httpx
 from pydantic import ValidationError
@@ -25,7 +26,9 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 class GeminiServiceError(Exception):
     """Base exception for Gemini service failures."""
-    pass
+    def __init__(self, message: str = ""):
+        super().__init__(message)
+        self.message = message
 
 
 class GeminiProviderError(GeminiServiceError):
@@ -35,9 +38,15 @@ class GeminiProviderError(GeminiServiceError):
 
 class GeminiQuotaExceededError(GeminiProviderError):
     """Raised when the Google Gemini API returns an HTTP 429 rate limit or quota exhaustion."""
-    def __init__(self, message: str, retry_after: Optional[float] = None):
+    def __init__(
+        self,
+        message: str,
+        retry_after: Optional[float] = None,
+        is_quota_exhausted: bool = False,
+    ):
         super().__init__(message)
         self.retry_after = retry_after
+        self.is_quota_exhausted = is_quota_exhausted
 
 
 class GeminiValidationError(GeminiServiceError):
@@ -148,7 +157,10 @@ def generate_offline_mock_question(
     Provides a catalog of distinct questions per language to support multi-question progression.
     """
     diff_val = difficulty if isinstance(difficulty, SeniorityLevel) else SeniorityLevel(difficulty)
-    lang_val = primary_language if isinstance(primary_language, CodingLanguage) else CodingLanguage(primary_language)
+    try:
+        lang_val = primary_language if isinstance(primary_language, CodingLanguage) else CodingLanguage(primary_language)
+    except (ValueError, TypeError):
+        lang_val = None
 
     if lang_val == CodingLanguage.SQL:
         catalog = [
@@ -305,7 +317,7 @@ def generate_offline_mock_question(
                 ],
             },
         ]
-    else:  # Default to Python
+    elif lang_val == CodingLanguage.PYTHON:
         catalog = [
             {
                 "topic": "Distributed Concurrency & Idempotent Transactions",
@@ -380,16 +392,99 @@ def generate_offline_mock_question(
                 ],
             },
         ]
+    else:
+        catalog = []
 
-    item = catalog[(question_number - 1) % len(catalog)]
+    if not catalog:
+        raise GeminiProviderError(
+            f"No suitable offline mock question found in catalog for language '{getattr(primary_language, 'value', primary_language)}' and role '{role}'."
+        )
+
+    effective_q_num = max(1, question_number)
+    item = catalog[(effective_q_num - 1) % len(catalog)]
     return InterviewQuestionSchema(
-        question_number=question_number,
+        question_number=effective_q_num,
         topic=item["topic"],
         difficulty=diff_val,
         question_text=item["question_text"],
         starter_code=item["starter_code"],
         expected_concepts=item["expected_concepts"],
     )
+
+
+def parse_gemini_429_details(response: httpx.Response) -> Tuple[bool, Optional[float], str]:
+    """Inspects an HTTP 429 response from Gemini without exposing sensitive credentials.
+
+    Returns:
+        Tuple of (is_quota_exhausted: bool, retry_after_sec: Optional[float], clean_message: str)
+    """
+    retry_hdr = response.headers.get("Retry-After")
+    retry_sec: Optional[float] = None
+    if retry_hdr:
+        try:
+            retry_sec = float(retry_hdr)
+        except (ValueError, TypeError):
+            pass
+
+    raw_text = response.text or ""
+    clean_text = raw_text
+    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY in clean_text:
+        clean_text = clean_text.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+
+    err_msg = ""
+    status_str = ""
+    details_list: List[Dict[str, Any]] = []
+    try:
+        data = response.json()
+        if isinstance(data, dict) and "error" in data:
+            err_obj = data["error"]
+            err_msg = err_obj.get("message", "")
+            status_str = err_obj.get("status", "")
+            details_list = err_obj.get("details", [])
+    except Exception:
+        err_msg = clean_text[:200]
+
+    # Try extracting retry delay from message or details if not in header
+    # e.g. "Please retry in 5h47m58.839658747s" or details RetryInfo retryDelay "60s"
+    if retry_sec is None:
+        delay_match = re.search(
+            r"retry in (?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?",
+            clean_text,
+            re.IGNORECASE,
+        )
+        if delay_match:
+            h = float(delay_match.group(1) or 0)
+            m = float(delay_match.group(2) or 0)
+            s = float(delay_match.group(3) or 0)
+            total = (h * 3600.0) + (m * 60.0) + s
+            if total > 0:
+                retry_sec = total
+        else:
+            for d in details_list:
+                if isinstance(d, dict) and "retryDelay" in d:
+                    rd_str = str(d["retryDelay"]).rstrip("s")
+                    try:
+                        retry_sec = float(rd_str)
+                        break
+                    except (ValueError, TypeError):
+                        pass
+
+    text_lower = clean_text.lower()
+    is_quota_exhausted = (
+        "free_tier_requests" in text_lower
+        or "per day" in text_lower
+        or "per_day" in text_lower
+        or "daily" in text_lower
+        or "exceeded your current quota" in text_lower
+        or "check your plan and billing" in text_lower
+        or (retry_sec is not None and retry_sec > 10.0)
+    )
+
+    summary_msg = err_msg or clean_text[:200] or "Rate limit exceeded"
+    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY in summary_msg:
+        summary_msg = summary_msg.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+
+    return is_quota_exhausted, retry_sec, summary_msg
 
 
 async def _post_with_retry(
@@ -400,27 +495,34 @@ async def _post_with_retry(
     max_retries: int = 2,
     base_backoff: float = 1.0,
 ) -> httpx.Response:
-    """Performs HTTP POST to Gemini with bounded exponential backoff on HTTP 429 rate limits."""
+    """Performs HTTP POST to Gemini with bounded exponential backoff on HTTP 429 rate limits.
+
+    Never repeatedly retries daily-quota-exhausted requests.
+    """
     last_response: Optional[httpx.Response] = None
     for attempt in range(max_retries + 1):
         response = await client.post(endpoint, headers=headers, json=json_payload)
         last_response = response
         if response.status_code == 200:
             return response
-        if response.status_code == 429 and attempt < max_retries:
-            retry_hdr = response.headers.get("Retry-After")
-            wait_time = base_backoff * (2 ** attempt)
-            if retry_hdr:
-                try:
-                    wait_time = max(wait_time, min(float(retry_hdr), 5.0))
-                except (ValueError, TypeError):
-                    pass
-            logger.warning(
-                f"Gemini API returned HTTP 429 (attempt {attempt + 1}/{max_retries + 1}). "
-                f"Backing off for {wait_time:.1f}s before retry..."
-            )
-            await asyncio.sleep(wait_time)
-            continue
+        if response.status_code == 429:
+            is_quota_exhausted, retry_sec, clean_msg = parse_gemini_429_details(response)
+            if is_quota_exhausted or (retry_sec is not None and retry_sec > 10.0):
+                logger.warning(
+                    f"Gemini API quota exhausted ({clean_msg[:120]}). Skipping further retries."
+                )
+                break
+            if attempt < max_retries:
+                wait_time = base_backoff * (2 ** attempt)
+                if retry_sec:
+                    wait_time = max(wait_time, min(retry_sec, 5.0))
+                logger.warning(
+                    f"Gemini API returned temporary HTTP 429 (attempt {attempt + 1}/{max_retries + 1}). "
+                    f"Backing off for {wait_time:.1f}s before retry..."
+                )
+                await asyncio.sleep(wait_time)
+                continue
+            break
         break
     assert last_response is not None
     return last_response
@@ -440,8 +542,11 @@ async def generate_interview_question(
     If GEMINI_API_KEY is not configured:
     - If allow_offline is True, automatically delegates to the deterministic offline mock generator.
     - If allow_offline is False, raises GeminiProviderError.
-    If GEMINI_API_KEY is configured, sends a structured request to Gemini. Failures raise GeminiProviderError or
-    GeminiValidationError rather than silently returning mock data.
+    If GEMINI_API_KEY is configured:
+    - Sends a structured request to Gemini.
+    - If Gemini returns HTTP 429 (quota exhausted or rate limited) and allow_offline is True,
+      safely falls back to the deterministic offline mock question catalog.
+    - If allow_offline is False, raises GeminiQuotaExceededError or GeminiProviderError.
     """
     # 1. Offline Mode when no API key is provided
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
@@ -484,16 +589,33 @@ async def generate_interview_question(
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
             if response.status_code == 429:
-                retry_hdr = response.headers.get("Retry-After")
-                retry_sec: Optional[float] = None
-                if retry_hdr:
-                    try:
-                        retry_sec = float(retry_hdr)
-                    except (ValueError, TypeError):
-                        pass
+                is_quota_exhausted, retry_sec, clean_msg = parse_gemini_429_details(response)
+                if allow_offline:
+                    logger.warning(
+                        f"Gemini API rate limit or quota exceeded ({clean_msg[:120]}). allow_offline=True: "
+                        "Falling back to deterministic offline question catalog."
+                    )
+                    return generate_offline_mock_question(
+                        role=role,
+                        difficulty=difficulty,
+                        primary_language=primary_language,
+                        question_number=question_number,
+                    )
                 raise GeminiQuotaExceededError(
-                    f"Gemini API rate limit exceeded (HTTP 429): {error_preview}",
+                    f"Gemini API rate limit exceeded (HTTP 429): {clean_msg}",
                     retry_after=retry_sec,
+                    is_quota_exhausted=is_quota_exhausted,
+                )
+            if response.status_code in (502, 503, 504) and allow_offline:
+                logger.warning(
+                    f"Gemini API transient upstream failure (HTTP {response.status_code}). allow_offline=True: "
+                    "Falling back to deterministic offline question catalog."
+                )
+                return generate_offline_mock_question(
+                    role=role,
+                    difficulty=difficulty,
+                    primary_language=primary_language,
+                    question_number=question_number,
                 )
             raise GeminiProviderError(
                 f"Gemini API error (HTTP {response.status_code}): {error_preview}"
@@ -528,6 +650,17 @@ async def generate_interview_question(
         return validated_question
 
     except httpx.RequestError as exc:
+        if allow_offline:
+            logger.warning(
+                f"Network connectivity error calling Gemini API ({type(exc).__name__}). allow_offline=True: "
+                "Falling back to deterministic offline question catalog."
+            )
+            return generate_offline_mock_question(
+                role=role,
+                difficulty=difficulty,
+                primary_language=primary_language,
+                question_number=question_number,
+            )
         raise GeminiProviderError(
             f"Network connectivity error while calling Gemini API: {type(exc).__name__}"
         ) from exc
@@ -699,16 +832,11 @@ async def evaluate_candidate_answer(
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
             if response.status_code == 429:
-                retry_hdr = response.headers.get("Retry-After")
-                retry_sec: Optional[float] = None
-                if retry_hdr:
-                    try:
-                        retry_sec = float(retry_hdr)
-                    except (ValueError, TypeError):
-                        pass
+                is_quota_exhausted, retry_sec, clean_msg = parse_gemini_429_details(response)
                 raise GeminiQuotaExceededError(
-                    f"Gemini API evaluation rate limit exceeded (HTTP 429): {error_preview}",
+                    f"Gemini API evaluation rate limit exceeded (HTTP 429): {clean_msg}",
                     retry_after=retry_sec,
+                    is_quota_exhausted=is_quota_exhausted,
                 )
             raise GeminiProviderError(
                 f"Gemini API evaluation error (HTTP {response.status_code}): {error_preview}"
@@ -926,16 +1054,11 @@ async def generate_follow_up_question(
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
             if response.status_code == 429:
-                retry_hdr = response.headers.get("Retry-After")
-                retry_sec: Optional[float] = None
-                if retry_hdr:
-                    try:
-                        retry_sec = float(retry_hdr)
-                    except (ValueError, TypeError):
-                        pass
+                is_quota_exhausted, retry_sec, clean_msg = parse_gemini_429_details(response)
                 raise GeminiQuotaExceededError(
-                    f"Gemini API follow-up generation rate limit exceeded (HTTP 429): {error_preview}",
+                    f"Gemini API follow-up generation rate limit exceeded (HTTP 429): {clean_msg}",
                     retry_after=retry_sec,
+                    is_quota_exhausted=is_quota_exhausted,
                 )
             raise GeminiProviderError(
                 f"Gemini API follow-up generation error (HTTP {response.status_code}): {error_preview}"
@@ -1002,6 +1125,8 @@ def synthesize_deterministic_report_narrative(
 
     if overall_score is not None:
         score_clause = f"achieving an overall weighted score of {overall_score:.1f}/10 ({performance_rating})"
+    elif evaluated_questions == 0:
+        score_clause = "with challenges completed in offline mode (live AI evaluation unrecorded)"
     else:
         score_clause = "with evaluations recorded across completed challenges"
 
@@ -1200,16 +1325,11 @@ async def generate_report_narrative(
                     aggregated_suggestions=aggregated_suggestions,
                 )
             if response.status_code == 429:
-                retry_hdr = response.headers.get("Retry-After")
-                retry_sec: Optional[float] = None
-                if retry_hdr:
-                    try:
-                        retry_sec = float(retry_hdr)
-                    except (ValueError, TypeError):
-                        pass
+                is_quota_exhausted, retry_sec, clean_msg = parse_gemini_429_details(response)
                 raise GeminiQuotaExceededError(
-                    f"Gemini API report narrative rate limit exceeded (HTTP 429): {error_preview}",
+                    f"Gemini API report narrative rate limit exceeded (HTTP 429): {clean_msg}",
                     retry_after=retry_sec,
+                    is_quota_exhausted=is_quota_exhausted,
                 )
             raise GeminiProviderError(f"Gemini API report narrative error (HTTP {response.status_code}): {error_preview}")
 

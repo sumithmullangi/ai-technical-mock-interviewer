@@ -5,9 +5,14 @@ from app.models.interview import (
     AnswerEvaluationModel,
     CandidateAnswerModel,
     FollowUpQuestionModel,
-    InterviewSessionModel,
     InterviewReportModel,
+    InterviewSessionModel,
     PrimaryQuestionModel,
+)
+from app.models.user import (
+    PasswordResetTokenModel,
+    UserModel,
+    UserSessionModel,
 )
 
 __all__ = [
@@ -18,4 +23,7 @@ __all__ = [
     "InterviewReportModel",
     "InterviewSessionModel",
     "PrimaryQuestionModel",
+    "PasswordResetTokenModel",
+    "UserModel",
+    "UserSessionModel",
 ]

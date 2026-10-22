@@ -1,35 +1,172 @@
 import React, { useState } from 'react';
 import {
   Play,
-  Sliders,
   ShieldCheck,
-  Sparkles,
-  Cpu,
-  Layers,
   ArrowRight,
   RotateCcw,
   AlertCircle,
   Loader2,
+  Server,
+  Cpu,
+  Globe,
+  Database,
+  CheckCircle2,
+  Sliders,
+  X,
 } from 'lucide-react';
 import type {
   InterviewConfig,
   ConfiguredSession,
   StartedSessionData,
 } from '../types';
+import { apiFetch } from '../utils/api';
 
 interface InterviewConsoleProps {
   onStartSession: (session: StartedSessionData) => void;
   onConfigSaved: (session: ConfiguredSession) => void;
   onOpenSetupModal: () => void;
-  onNavigateTab: (tab: 'rubric' | 'workflow' | 'sample-report' | 'architecture') => void;
+  onNavigateTab: (tab: 'rubric' | 'workflow' | 'sample-report' | 'architecture' | 'challenges') => void;
   healthOk: boolean;
 }
 
-const PRESET_ROLES = [
-  'Backend Engineer (Distributed Systems)',
-  'Systems Infrastructure & Reliability',
-  'Full-Stack Web Architect',
-  'Data & Analytics Pipeline Engineer',
+const TRACKS = [
+  {
+    id: 'Backend Engineer (Distributed Systems)',
+    name: 'Distributed Systems',
+    subtitle: 'High-throughput concurrency, event brokers & consensus algorithms',
+    badge: 'Backend Arch',
+    topics: ['Concurrency', 'Raft / Paxos', 'Kafka', 'Partitioning'],
+    icon: Server,
+  },
+  {
+    id: 'Systems Infrastructure & Reliability',
+    name: 'Systems & Infrastructure',
+    subtitle: 'Kernel I/O, memory safety, fault isolation & failover semantics',
+    badge: 'SRE & Platform',
+    topics: ['Kernel I/O', 'Memory Safety', 'Telemetry', 'Circuit Breakers'],
+    icon: Cpu,
+  },
+  {
+    id: 'Full-Stack Web Architect',
+    name: 'Full-Stack Architecture',
+    subtitle: 'Client-server sync protocols, caching layers & high-scale APIs',
+    badge: 'Web Systems',
+    topics: ['API Gateways', 'Hydration', 'Cache Invalidation', 'WebSockets'],
+    icon: Globe,
+  },
+  {
+    id: 'Data & Analytics Pipeline Engineer',
+    name: 'Data & Pipeline Systems',
+    subtitle: 'Backpressure control, analytical storage & stream transformations',
+    badge: 'Streaming & Storage',
+    topics: ['Backpressure', 'Windowing', 'Parquet / Iceberg', 'CDC'],
+    icon: Database,
+  },
+] as const;
+
+export interface CuratedChallenge {
+  id: string;
+  title: string;
+  domain: string;
+  domainShort: string;
+  difficulty: 'Junior' | 'Mid' | 'Senior' | 'Staff';
+  language: 'Python' | 'Java' | 'SQL';
+  summary: string;
+  keyTopics: string[];
+  rubricWeight: string;
+}
+
+const CURATED_CHALLENGES: CuratedChallenge[] = [
+  {
+    id: 'ch-1',
+    title: 'Distributed Rate Limiter with Sliding Window & Lua',
+    domain: 'Backend Engineer (Distributed Systems)',
+    domainShort: 'Distributed Systems',
+    difficulty: 'Senior',
+    language: 'Python',
+    summary: 'Design a thread-safe sliding window rate limiter capable of handling 50k QPS across microservices using Redis Lua scripts, atomic increments, and clock drift mitigation.',
+    keyTopics: ['Token Bucket', 'Sliding Window', 'Redis Lua', 'Clock Skew'],
+    rubricWeight: 'Correctness (40%) • Scale (20%)',
+  },
+  {
+    id: 'ch-2',
+    title: 'Cache Stampede & Thundering Herd Mitigation',
+    domain: 'Systems Infrastructure & Reliability',
+    domainShort: 'Infrastructure & SRE',
+    difficulty: 'Staff',
+    language: 'Python',
+    summary: 'Implement probabilistic early expiration (XFetch algorithm) and distributed mutex locking to prevent database overload during high-traffic cache invalidations.',
+    keyTopics: ['XFetch Algorithm', 'Distributed Mutex', 'Cache Invalidation', 'Thundering Herd'],
+    rubricWeight: 'Edge Cases (25%) • Depth (25%)',
+  },
+  {
+    id: 'ch-3',
+    title: 'Distributed Mutex with Fencing Tokens & TTL Leases',
+    domain: 'Backend Engineer (Distributed Systems)',
+    domainShort: 'Distributed Systems',
+    difficulty: 'Staff',
+    language: 'Java',
+    summary: 'Architect a consensus-backed distributed lock manager that generates monotonically increasing fencing tokens to prevent split-brain state mutations during GC pauses.',
+    keyTopics: ['Redlock / Raft', 'Fencing Tokens', 'Lease Renewal', 'Split-Brain'],
+    rubricWeight: 'Architectural Depth (30%)',
+  },
+  {
+    id: 'ch-4',
+    title: 'Multi-Region Read Replica Lag & Failover Resolution',
+    domain: 'Data & Analytics Pipeline Engineer',
+    domainShort: 'Data Pipelines',
+    difficulty: 'Senior',
+    language: 'SQL',
+    summary: 'Implement read-your-writes causal consistency across geo-distributed PostgreSQL read replicas with semi-synchronous replication and automatic split-brain prevention.',
+    keyTopics: ['Replication Lag', 'Causal Consistency', 'WAL Shipping', 'Leader Election'],
+    rubricWeight: 'Technical Depth (25%) • Correctness (35%)',
+  },
+  {
+    id: 'ch-5',
+    title: 'Real-Time WebSocket Pub/Sub with Ring Buffer Backpressure',
+    domain: 'Full-Stack Web Architect',
+    domainShort: 'Full-Stack Systems',
+    difficulty: 'Senior',
+    language: 'Python',
+    summary: 'Construct an asynchronous WebSocket fanout broker with bounded ring buffers, backpressure load shedding, and client heartbeat re-synchronization under packet loss.',
+    keyTopics: ['Ring Buffer', 'Backpressure', 'Heartbeats', 'Event Demux'],
+    rubricWeight: 'Edge Cases (25%) • Scale (20%)',
+  },
+  {
+    id: 'ch-6',
+    title: 'Saga Pattern Coordinator with Compensating Transactions',
+    domain: 'Backend Engineer (Distributed Systems)',
+    domainShort: 'Distributed Systems',
+    difficulty: 'Senior',
+    language: 'Java',
+    summary: 'Build a distributed checkout workflow using the Saga choreography pattern with transactional outbox messaging and idempotent compensating rollback actions.',
+    keyTopics: ['Saga Pattern', 'Transactional Outbox', 'Idempotency Keys', 'Compensations'],
+    rubricWeight: 'Correctness (40%) • Clarity (15%)',
+  },
+];
+
+const ROUND_PRESETS = [
+  {
+    count: 3,
+    label: 'Sprint Loop',
+    duration: '~30 min',
+    desc: 'Core algorithmic and fundamental architectural checks',
+    recommended: false,
+  },
+  {
+    count: 5,
+    label: 'Standard Loop',
+    duration: '~50 min',
+    desc: 'Comprehensive multi-stage round with dynamic follow-ups',
+    recommended: true,
+  },
+  {
+    count: 8,
+    label: 'Staff Loop',
+    duration: '~80 min',
+    desc: 'End-to-end distributed system & failure mode deep-dive',
+    recommended: false,
+  },
 ] as const;
 
 export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
@@ -48,11 +185,71 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
 
   const [launchStage, setLaunchStage] = useState<'idle' | 'validating' | 'starting' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [challengeCategory, setChallengeCategory] = useState<string>('all');
 
-  // Resume Existing Session state
+  // Resume Drawer state
+  const [showResumeDrawer, setShowResumeDrawer] = useState(false);
   const [resumeId, setResumeId] = useState('');
   const [resumeLoading, setResumeLoading] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
+
+  // Direct 1-click launch from the Challenge Bank
+  const handleQuickLaunchChallenge = async (ch: CuratedChallenge) => {
+    const customConfig: InterviewConfig = {
+      role: ch.domain,
+      difficulty: ch.difficulty,
+      primaryLanguage: ch.language,
+      questionCount: 5,
+    };
+    setConfig(customConfig);
+    setErrorMessage(null);
+    setLaunchStage('validating');
+
+    const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+
+    try {
+      const configRes = await apiFetch(`${apiBase}/api/v1/interviews/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: customConfig.role.trim(),
+          difficulty: customConfig.difficulty,
+          primaryLanguage: customConfig.primaryLanguage,
+          questionCount: customConfig.questionCount,
+        }),
+      });
+
+      if (!configRes.ok) {
+        const errJson = await configRes.json().catch(() => null);
+        throw new Error(errJson?.detail || 'Failed to configure challenge session.');
+      }
+
+      const configuredData: ConfiguredSession = await configRes.json();
+      onConfigSaved(configuredData);
+
+      setLaunchStage('starting');
+      const startRes = await apiFetch(`${apiBase}/api/v1/interviews/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: configuredData.sessionId || configuredData.session_id,
+        }),
+      });
+
+      if (!startRes.ok) {
+        const errJson = await startRes.json().catch(() => null);
+        throw new Error(errJson?.detail || 'Failed to start challenge session.');
+      }
+
+      const startedData: StartedSessionData = await startRes.json();
+      onStartSession(startedData);
+    } catch (err: unknown) {
+      setLaunchStage('error');
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Failed to launch challenge session.'
+      );
+    }
+  };
 
   const handleLaunch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -63,7 +260,7 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
 
     try {
       // Step 1: Validate and register configuration
-      const configRes = await fetch(`${apiBase}/api/v1/interviews/config`, {
+      const configRes = await apiFetch(`${apiBase}/api/v1/interviews/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -80,32 +277,21 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
           ? typeof errJson.detail === 'string'
             ? errJson.detail
             : JSON.stringify(errJson.detail)
-          : `Configuration error (HTTP ${configRes.status})`;
-        setErrorMessage(detail);
-        setLaunchStage('error');
-        return;
+          : `Failed to configure interview (${configRes.status})`;
+        throw new Error(detail);
       }
 
-      const configData = await configRes.json();
-      const sid = configData.session_id || configData.sessionId;
+      const configuredData: ConfiguredSession = await configRes.json();
+      onConfigSaved(configuredData);
 
-      const savedSession: ConfiguredSession = {
-        status: configData.status || 'configured',
-        sessionId: sid,
-        session_id: sid,
-        config: configData.config || config,
-        message: configData.message || 'Configuration validated.',
-        createdAt: configData.created_at || configData.createdAt,
-      };
-
-      onConfigSaved(savedSession);
-
-      // Step 2: Launch session and obtain Question 1
+      // Step 2: Initialize session and fetch Question 1
       setLaunchStage('starting');
-
-      const startRes = await fetch(`${apiBase}/api/v1/interviews/${sid}/start`, {
+      const startRes = await apiFetch(`${apiBase}/api/v1/interviews/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: configuredData.sessionId || configuredData.session_id,
+        }),
       });
 
       if (!startRes.ok) {
@@ -114,103 +300,96 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
           ? typeof errJson.detail === 'string'
             ? errJson.detail
             : JSON.stringify(errJson.detail)
-          : `Launch error (HTTP ${startRes.status})`;
-        setErrorMessage(detail);
-        setLaunchStage('error');
-        return;
+          : `Failed to start session (${startRes.status})`;
+        throw new Error(detail);
       }
 
-      const startData = await startRes.json();
-      const startedSession: StartedSessionData = {
-        status: startData.status || 'in_progress',
-        session_id: sid,
-        sessionId: sid,
-        current_question: startData.current_question || startData.currentQuestion,
-        currentQuestion: startData.current_question || startData.currentQuestion,
-        message: startData.message || 'Session started.',
-        started_at: startData.started_at || startData.startedAt || new Date().toISOString(),
-        config: configData.config || config,
-      };
-
-      setLaunchStage('idle');
-      onStartSession(startedSession);
-    } catch (err) {
+      const startedData: StartedSessionData = await startRes.json();
+      onStartSession(startedData);
+    } catch (err: unknown) {
       setLaunchStage('error');
       setErrorMessage(
         err instanceof TypeError && err.message === 'Failed to fetch'
-          ? 'Unable to reach the FastAPI backend server (http://127.0.0.1:8000). Please check if uvicorn is running.'
+          ? 'Unable to connect to FastAPI backend server. Please verify backend is running on port 8000.'
           : err instanceof Error
           ? err.message
-          : 'Failed to start interview.'
+          : 'Failed to launch interview session.'
       );
     }
   };
 
   const handleResume = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanId = resumeId.trim();
-    if (!cleanId) {
-      setResumeError('Please enter a valid session UUID.');
+    const sid = resumeId.trim();
+    if (!sid) {
+      setResumeError('Please enter a session UUID to resume.');
       return;
     }
 
-    setResumeError(null);
     setResumeLoading(true);
+    setResumeError(null);
+
+    const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
-      const res = await fetch(`${apiBase}/api/v1/interviews/${cleanId}`);
-
+      const res = await apiFetch(`${apiBase}/api/v1/interviews/${sid}`);
       if (!res.ok) {
-        if (res.status === 404) {
-          setResumeError(`Session "${cleanId}" not found in database.`);
-        } else {
-          setResumeError(`Failed to load session (HTTP ${res.status}).`);
-        }
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || `Session ${sid} not found.`);
+      }
+
+      const data = await res.json();
+      const currentStatus = data.status || 'in_progress';
+
+      if (currentStatus === 'completed') {
+        onStartSession({
+          status: 'completed',
+          session_id: sid,
+          sessionId: sid,
+          message: 'Viewing completed session evaluation report.',
+          started_at: data.createdAt || data.created_at || new Date().toISOString(),
+          config: data.config,
+        });
         setResumeLoading(false);
         return;
       }
 
-      const data = await res.json();
-      const sid = data.sessionId || data.session_id || cleanId;
-
-      // If session is configured but not started, we start it
-      if (data.status === 'configured') {
-        const startRes = await fetch(`${apiBase}/api/v1/interviews/${sid}/start`, {
+      if (currentStatus === 'configured') {
+        const startRes = await apiFetch(`${apiBase}/api/v1/interviews/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sid }),
         });
-        if (startRes.ok) {
-          const startData = await startRes.json();
-          onStartSession({
-            status: 'in_progress',
-            session_id: sid,
-            sessionId: sid,
-            current_question: startData.current_question || startData.currentQuestion,
-            currentQuestion: startData.current_question || startData.currentQuestion,
-            message: startData.message || 'Resumed session.',
-            started_at: startData.started_at || new Date().toISOString(),
-            config: data.config,
-          });
-          setResumeLoading(false);
-          return;
+
+        if (!startRes.ok) {
+          const err = await startRes.json().catch(() => null);
+          throw new Error(err?.detail || 'Failed to initialize configured session.');
+        }
+
+        const started = await startRes.json();
+        onStartSession(started);
+        setResumeLoading(false);
+        return;
+      }
+
+      // Resume active session
+      let questionData = data.current_question || data.currentQuestion;
+      if (!questionData) {
+        const currentQNum = data.current_question_number || data.currentQuestionNumber || 1;
+        const qRes = await apiFetch(`${apiBase}/api/v1/interviews/${sid}/questions/${currentQNum}`);
+        if (qRes.ok) {
+          questionData = await qRes.json();
         }
       }
 
-      // If already in_progress or completed
       onStartSession({
-        status: data.status,
+        status: 'in_progress',
         session_id: sid,
         sessionId: sid,
-        current_question: {
-          question_number: 1,
-          topic: 'Technical Interview',
-          difficulty: data.config?.difficulty || 'Senior',
-          question_text: 'Technical interview session resumed.',
-          expected_concepts: [],
-        },
-        message: data.message || 'Session loaded successfully.',
-        started_at: data.createdAt || data.created_at || new Date().toISOString(),
+        current_question: questionData,
+        currentQuestion: questionData,
+        message: 'Resuming active technical interview round.',
+        started_at: data.started_at || data.startedAt || new Date().toISOString(),
         config: data.config,
       });
 
@@ -218,142 +397,238 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
     } catch (err) {
       setResumeLoading(false);
       setResumeError(
-        err instanceof Error ? err.message : 'Unable to connect to backend to resume session.'
+        err instanceof Error ? err.message : 'Unable to connect to resume session.'
       );
     }
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      {/* Top Application-First Console Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-slate-200/90 dark:border-slate-800/90 gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="flex h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400"></span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-              Interactive Developer Console
-            </span>
-            <span className="text-slate-300 dark:text-slate-700">•</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Milestone 4: PostgreSQL + Gemini</span>
+    <div className="w-full relative z-10 animate-fadeIn">
+      {/* Precision Column Boundary Guides across the full viewport width */}
+      <div className="editorial-frame border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
+        {/* Workspace Specimen Datum Strip */}
+        <div className="flex items-center justify-between px-4 sm:px-8 py-2.5 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono tracking-[0.25em] uppercase text-[#7A7875] dark:text-slate-400 select-none bg-[#F8F6F1]/90 dark:bg-[#16061D]/90 backdrop-blur-xs">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
+            <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">TECHNICAL PRACTICE STUDIO // PRODUCTION EVALUATION ENVIRONMENT</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Launch Technical Mock Interview
-          </h1>
-        </div>
-
-        {/* Console Status Pills */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-slate-700 dark:text-slate-300 font-medium shadow-2xs">
-            <span className={`h-2 w-2 rounded-full ${healthOk ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
-            <span>{healthOk ? 'API Server Online' : 'Connecting to API'}</span>
-          </div>
-          <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-slate-700 dark:text-slate-300 font-medium shadow-2xs">
-            <ShieldCheck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            <span>Static AST Review</span>
-          </div>
-          <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-slate-700 dark:text-slate-300 font-medium shadow-2xs">
-            <Cpu className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>Gemini 2.5 Flash / Fallback</span>
+          <div className="hidden sm:flex items-center gap-4">
+            <span>ENGINE: {healthOk ? 'ACTIVE' : 'CONNECTING'}</span>
+            <span className="text-[#EAAA00]">•</span>
+            <span>4 DOMAINS</span>
+            <span className="text-[#EAAA00]">•</span>
+            <span>AST ANALYZER ARMED</span>
           </div>
         </div>
-      </div>
 
-      {/* Main Grid: Launcher (Left) + Specifications & Tools (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Direct Interview Configuration & Launcher */}
-        <section
-          aria-labelledby="configure-session-heading"
-          className="lg:col-span-7 bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-5 sm:p-7 shadow-xs transition-colors"
-        >
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
-            <div>
-              <h2 id="configure-session-heading" className="text-base font-bold text-slate-900 dark:text-white">
-                Session Configuration
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Set interview parameters to generate calibrated questions and evaluation rubric.
+        {/* Real Application Command Station Header */}
+        <section className="px-4 sm:px-8 lg:px-12 py-8 sm:py-10 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#16061D]/80 relative transition-colors">
+          <div className="editorial-crosshair -top-2.5 -left-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+          <div className="editorial-crosshair -top-2.5 -right-2.5 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[10px] font-mono tracking-widest uppercase text-[#3A0F34] dark:text-[#EAAA00] mb-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
+                <span>INTERACTIVE ASSESSMENT WORKSPACE</span>
+              </div>
+              <h1 className="font-didone text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#111111] dark:text-[#F8F6F1] leading-[1.05]">
+                Technical Interview Studio
+              </h1>
+              <p className="mt-2 text-xs sm:text-sm text-[#555555] dark:text-slate-300 font-sans leading-relaxed">
+                Launch an engineering technical round calibrated to your domain and seniority level, or choose from curated challenges below. Evaluated across 4-dimensional rubrics with static AST validation and adaptive inquiries.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onOpenSetupModal}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition"
-              title="Open full configuration dialog"
-            >
-              <Sliders className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-              <span>Modal View</span>
-            </button>
+
+            <div className="flex flex-wrap items-center gap-2.5 font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => setShowResumeDrawer(!showResumeDrawer)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition cursor-pointer font-semibold uppercase tracking-wider text-[11px]"
+              >
+                <RotateCcw className="h-3 w-3 text-[#EAAA00]" />
+                <span>{showResumeDrawer ? 'Close Resume' : 'Resume UUID'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onOpenSetupModal}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#111111] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition cursor-pointer font-semibold uppercase tracking-wider text-[11px]"
+              >
+                <Sliders className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00]" />
+                <span>Config Modal</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Collapsible Resume Session Drawer */}
+        {showResumeDrawer && (
+          <div className="px-4 sm:px-8 py-6 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/90 dark:bg-[#16061D]/95 backdrop-blur-xs animate-fadeIn">
+            <div className="max-w-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00]" />
+                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Resume Registered Session</h3>
+                </div>
+                <button
+                  onClick={() => setShowResumeDrawer(false)}
+                  className="p-1 text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] transition"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs text-[#555555] dark:text-slate-300 mb-4 font-sans">
+                Enter your previously registered session UUID to resume your evaluation stream or review your completed report.
+              </p>
+              {resumeError && (
+                <div className="mb-4 p-3 rounded-none border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/50 text-xs text-rose-800 dark:text-rose-200">
+                  {resumeError}
+                </div>
+              )}
+              <form onSubmit={handleResume} className="flex gap-2.5">
+                <input
+                  type="text"
+                  value={resumeId}
+                  onChange={(e) => {
+                    setResumeId(e.target.value);
+                    if (resumeError) setResumeError(null);
+                  }}
+                  placeholder="Paste session UUID (e.g. 3fa85f64-5717-4562-b3fc-2c963f66afa6)..."
+                  disabled={resumeLoading}
+                  className="flex-1 rounded-none border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#120516] px-3.5 py-2.5 text-xs font-mono text-[#111111] dark:text-[#F8F6F1] placeholder:text-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={resumeLoading || !resumeId.trim()}
+                  className="rounded-none bg-[#3A0F34] dark:bg-[#EAAA00] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] px-5 py-2.5 text-xs font-mono font-bold text-white dark:text-[#120516] transition disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer shadow-xs border border-[#3A0F34] dark:border-[#EAAA00]"
+                >
+                  {resumeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[#EAAA00] dark:text-[#120516]" /> : <span>Resume Session</span>}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Global Error Banner */}
+        {errorMessage && (
+          <div
+            role="alert"
+            className="px-4 sm:px-8 py-4 border-b border-rose-300 dark:border-rose-900 bg-rose-50/90 dark:bg-rose-950/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-3"
+          >
+            <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-semibold">Session Configuration Notice: </span>
+              <span>{errorMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Main Architectural Form aligned to the Grid */}
+        <form onSubmit={handleLaunch} className="divide-y divide-[#E5DFD5] dark:divide-[#3A0F34]/50">
+          {/* 1. Track Selection Matrix (4-column grid cells) */}
+          <div className="px-4 sm:px-8 py-10">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-6">
+              <div>
+                <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold block">
+                  01 / ARCHITECTURAL DOMAIN
+                </span>
+                <h2 className="font-didone text-2xl font-bold text-[#111111] dark:text-[#F8F6F1] mt-1">
+                  Select Technical Domain
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenSetupModal}
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-[#3A0F34] dark:text-[#EAAA00] hover:underline transition self-start sm:self-auto cursor-pointer"
+              >
+                <Sliders className="h-3.5 w-3.5 text-[#EAAA00]" />
+                <span>Advanced Parameters Modal →</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {TRACKS.map((track) => {
+                const Icon = track.icon;
+                const isSelected = config.role === track.id;
+                return (
+                  <button
+                    key={track.id}
+                    type="button"
+                    disabled={launchStage === 'validating' || launchStage === 'starting'}
+                    onClick={() => {
+                      setConfig({ ...config, role: track.id });
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    className={`relative text-left p-5 border transition-all cursor-pointer flex flex-col justify-between rounded-none ${
+                      isSelected
+                        ? 'border-[#3A0F34] bg-[#FAF8F5] dark:border-[#EAAA00] dark:bg-[#250C3D] shadow-xs'
+                        : 'border-[#E5DFD5] bg-[#F8F6F1]/70 dark:border-[#3A0F34]/50 dark:bg-[#16061D]/70 hover:border-[#3A0F34]/50 dark:hover:border-[#EAAA00]/50 hover:bg-white dark:hover:bg-[#250C3D]/40'
+                    }`}
+                  >
+                    {/* Active Corner Accent */}
+                    {isSelected && (
+                      <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#3A0F34] dark:bg-[#EAAA00]" />
+                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div
+                          className={`p-2 transition-colors ${
+                            isSelected
+                              ? 'bg-[#3A0F34] text-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516]'
+                              : 'bg-white text-[#3A0F34] border border-[#E5DFD5] dark:bg-[#120516] dark:text-[#EAAA00] dark:border-[#3A0F34]'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span
+                          className={`text-[9px] font-mono tracking-wider uppercase px-2 py-0.5 border ${
+                            isSelected
+                              ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00]'
+                              : 'text-[#7A7875] bg-white border-[#E5DFD5] dark:bg-[#120516] dark:text-slate-400 dark:border-[#3A0F34]'
+                          }`}
+                        >
+                          {track.badge}
+                        </span>
+                      </div>
+
+                      <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">
+                        {track.name}
+                      </h3>
+                      <p className="text-xs text-[#555555] dark:text-slate-300 mt-1.5 leading-relaxed font-sans">
+                        {track.subtitle}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-wrap gap-1 font-mono text-[9px] text-[#7A7875] dark:text-slate-400">
+                      {track.topics.map((t) => (
+                        <span
+                          key={t}
+                          className="px-1.5 py-0.5 bg-white dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Validation or Launch Error Alert */}
-          {errorMessage && (
-            <div
-              role="alert"
-              className="mb-5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5"
-            >
-              <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <span className="font-semibold">Launch Failure: </span>
-                <span>{errorMessage}</span>
-              </div>
-            </div>
-          )}
+          {/* 2. Seniority & Language Datum Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#E5DFD5] dark:divide-[#3A0F34]/50">
+            {/* Seniority Level */}
+            <div className="px-4 sm:px-8 py-8">
+              <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold block mb-1">
+                02 / SENIORITY RIGOR
+              </span>
+              <h3 className="font-didone text-lg font-bold text-[#111111] dark:text-[#F8F6F1] mb-4">
+                Target Engineering Seniority
+              </h3>
 
-          <form onSubmit={handleLaunch} className="space-y-5">
-            {/* 1. Target Engineering Role */}
-            <div>
-              <label htmlFor="console-role" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                Target Engineering Role
-              </label>
-              <select
-                id="console-role"
-                value={config.role}
-                disabled={launchStage === 'validating' || launchStage === 'starting'}
-                onChange={(e) => {
-                  setConfig({ ...config, role: e.target.value });
-                  if (errorMessage) setErrorMessage(null);
-                }}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-950 text-sm font-medium text-slate-900 dark:text-slate-100 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:opacity-50 transition"
-              >
-                {PRESET_ROLES.map((role) => (
-                  <option key={role} value={role} className="dark:bg-slate-900 dark:text-white">
-                    {role}
-                  </option>
-                ))}
-              </select>
-
-              {/* Quick Preset Pills */}
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {PRESET_ROLES.map((role) => {
-                  const shortLabel = role.replace(' (Distributed Systems)', '').replace('Systems ', '');
-                  const isSelected = config.role === role;
-                  return (
-                    <button
-                      key={role}
-                      type="button"
-                      disabled={launchStage === 'validating' || launchStage === 'starting'}
-                      onClick={() => setConfig({ ...config, role })}
-                      className={`text-[11px] rounded-md px-2 py-0.5 font-medium transition ${
-                        isSelected
-                          ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-700'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-transparent'
-                      }`}
-                    >
-                      {shortLabel}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 2. Seniority Level */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  Seniority Level
-                </label>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">Calibrates expected depth & rigor</span>
-              </div>
               <div className="grid grid-cols-4 gap-2">
                 {(['Junior', 'Mid', 'Senior', 'Staff'] as const).map((level) => {
                   const isSelected = config.difficulty === level;
@@ -366,10 +641,10 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                         setConfig({ ...config, difficulty: level });
                         if (errorMessage) setErrorMessage(null);
                       }}
-                      className={`rounded-xl py-2 text-xs font-semibold transition disabled:opacity-50 ${
+                      className={`py-2.5 text-xs font-mono transition-all cursor-pointer border rounded-none ${
                         isSelected
-                          ? 'border border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shadow-2xs'
-                          : 'border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                          ? 'border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
+                          : 'border-[#E5DFD5] bg-white text-[#555555] dark:border-[#3A0F34] dark:bg-[#16061D] dark:text-slate-300 hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
                       }`}
                     >
                       {level}
@@ -379,16 +654,15 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
               </div>
             </div>
 
-            {/* 3. Primary Coding Language */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  Primary Coding Language
-                </label>
-                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3" /> Static Evaluation (No Execution)
-                </span>
-              </div>
+            {/* Primary Language */}
+            <div className="px-4 sm:px-8 py-8">
+              <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold block mb-1">
+                03 / CODING LANGUAGE
+              </span>
+              <h3 className="font-didone text-lg font-bold text-[#111111] dark:text-[#F8F6F1] mb-4">
+                Static Review Environment
+              </h3>
+
               <div className="grid grid-cols-3 gap-2">
                 {(['Python', 'Java', 'SQL'] as const).map((lang) => {
                   const isSelected = config.primaryLanguage === lang;
@@ -401,264 +675,370 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                         setConfig({ ...config, primaryLanguage: lang });
                         if (errorMessage) setErrorMessage(null);
                       }}
-                      className={`rounded-xl py-2 text-xs font-semibold transition disabled:opacity-50 ${
+                      className={`py-2.5 px-3 text-xs font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 border rounded-none ${
                         isSelected
-                          ? 'border border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shadow-2xs'
-                          : 'border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                          ? 'border-[#3A0F34] bg-[#3A0F34] text-white dark:border-[#EAAA00] dark:bg-[#EAAA00] dark:text-[#120516] font-bold'
+                          : 'border-[#E5DFD5] bg-white text-[#555555] dark:border-[#3A0F34] dark:bg-[#16061D] dark:text-slate-300 hover:bg-[#F0EDE6] dark:hover:bg-[#250C3D] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
                       }`}
                     >
-                      {lang}
+                      {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-[#EAAA00] dark:text-[#120516]" />}
+                      <span>{lang}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
+          </div>
 
-            {/* 4. Question Depth Slider */}
+          {/* 3. Session Round Scope Matrix */}
+          <div className="px-4 sm:px-8 py-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold block">
+                  04 / ROUND DEPTH
+                </span>
+                <h3 className="font-didone text-lg font-bold text-[#111111] dark:text-[#F8F6F1] mt-0.5">
+                  Interview Challenge Cadence
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-[#7A7875] dark:text-slate-400">Dynamic Adaptive Follow-Ups Included</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {ROUND_PRESETS.map((preset) => {
+                const isSelected = config.questionCount === preset.count;
+                return (
+                  <button
+                    key={preset.count}
+                    type="button"
+                    disabled={launchStage === 'validating' || launchStage === 'starting'}
+                    onClick={() => {
+                      setConfig({ ...config, questionCount: preset.count });
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    className={`text-left p-4 border transition-all cursor-pointer flex flex-col justify-between rounded-none ${
+                      isSelected
+                        ? 'border-[#3A0F34] bg-[#FAF8F5] dark:border-[#EAAA00] dark:bg-[#250C3D]'
+                        : 'border-[#E5DFD5] bg-[#F8F6F1]/70 dark:border-[#3A0F34]/50 dark:bg-[#16061D]/70 hover:border-[#3A0F34]/50 dark:hover:border-[#EAAA00]/50 hover:bg-white dark:hover:bg-[#250C3D]/40'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">
+                          {preset.label}
+                        </span>
+                        <span className="font-mono text-xs font-semibold text-[#3A0F34] dark:text-[#EAAA00]">
+                          {preset.duration}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#555555] dark:text-slate-300 leading-snug font-sans">
+                        {preset.desc}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50">
+                      <span className="font-mono text-xs font-bold text-[#111111] dark:text-[#F8F6F1]">
+                        {preset.count} Technical Challenges
+                      </span>
+                      {preset.recommended && (
+                        <span className="text-[10px] font-mono font-semibold text-[#3A0F34] dark:text-[#EAAA00] bg-[#EAAA00]/20 dark:bg-[#EAAA00]/20 px-2 py-0.5 border border-[#EAAA00]/40">
+                          Recommended
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. Architectural Launch Station */}
+          <div className="px-4 sm:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 bg-[#FAF8F5]/60 dark:bg-[#16061D]/80 backdrop-blur-xs transition-colors">
+            <div className="flex items-center gap-3 text-xs text-[#555555] dark:text-slate-300 font-sans">
+              <ShieldCheck className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00] shrink-0" />
+              <span>Full session persistence with executive post-interview dossier and 4D rubric report.</span>
+            </div>
+
+            <button
+              type="submit"
+              disabled={launchStage === 'validating' || launchStage === 'starting'}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-none bg-[#3A0F34] hover:bg-[#2A0B26] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] px-8 py-4 text-xs font-mono uppercase tracking-wider font-bold text-white dark:text-[#120516] shadow-sm active:scale-[0.99] transition-all cursor-pointer border border-[#3A0F34] dark:border-[#EAAA00]"
+            >
+              {launchStage === 'validating' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-[#EAAA00] dark:text-[#120516]" />
+                  <span>Validating Parameters...</span>
+                </>
+              ) : launchStage === 'starting' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-[#EAAA00] dark:text-[#120516]" />
+                  <span>Calibrating Question 1...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="h-3.5 w-3.5 fill-current text-[#EAAA00] dark:text-[#120516]" />
+                  <span>Launch Interview Session</span>
+                  <ArrowRight className="h-4 w-4 ml-1 stroke-[2.5] text-[#EAAA00] dark:text-[#120516]" />
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
+
+        {/* Curated Challenge Bank: Real Practice Problems */}
+        <section className="px-4 sm:px-8 py-10 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1] dark:bg-[#120516] transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 mb-6">
             <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="console-questions" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  Question Count
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-300 tabular-nums bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-md">
-                    {config.questionCount} Challenges
-                  </span>
-                  {config.questionCount === 5 && (
-                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      (SRS Baseline)
+              <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold block">
+                PRACTICE CHALLENGES // INSTANT LAUNCH
+              </span>
+              <div className="flex items-center gap-3 mt-1">
+                <h2 className="font-didone text-2xl font-bold text-[#111111] dark:text-[#F8F6F1]">
+                  Curated Challenge Bank
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab('challenges')}
+                  className="hidden sm:inline-flex items-center gap-1 text-xs font-mono text-[#3A0F34] dark:text-[#EAAA00] hover:underline cursor-pointer"
+                >
+                  <span>Explore Full Directory (9 Specs) →</span>
+                </button>
+              </div>
+              <p className="text-xs text-[#555555] dark:text-slate-300 font-sans mt-0.5">
+                Select an architectural challenge to immediately calibrate and initiate Question 1.
+              </p>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
+              {[
+                { id: 'all', label: 'All (6)' },
+                { id: 'distributed', label: 'Distributed Systems' },
+                { id: 'infrastructure', label: 'Infrastructure & SRE' },
+                { id: 'fullstack', label: 'Full-Stack' },
+                { id: 'data', label: 'Data Pipelines' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setChallengeCategory(tab.id)}
+                  className={`px-3 py-1 text-[11px] border uppercase tracking-wider transition cursor-pointer ${
+                    challengeCategory === tab.id
+                      ? 'bg-[#3A0F34] text-white border-[#3A0F34] dark:bg-[#EAAA00] dark:text-[#120516] dark:border-[#EAAA00] font-bold'
+                      : 'bg-white text-[#7A7875] border-[#E5DFD5] dark:bg-[#16061D] dark:text-slate-400 dark:border-[#3A0F34] hover:text-[#111111] dark:hover:text-[#F8F6F1]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {CURATED_CHALLENGES.filter((ch) => {
+              if (challengeCategory === 'all') return true;
+              if (challengeCategory === 'distributed') return ch.domainShort === 'Distributed Systems';
+              if (challengeCategory === 'infrastructure') return ch.domainShort === 'Infrastructure & SRE';
+              if (challengeCategory === 'fullstack') return ch.domainShort === 'Full-Stack Systems';
+              if (challengeCategory === 'data') return ch.domainShort === 'Data Pipelines';
+              return true;
+            }).map((ch) => (
+              <div
+                key={ch.id}
+                className="relative p-5 border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col justify-between hover:border-[#3A0F34] dark:hover:border-[#EAAA00]/70 transition-all group"
+              >
+                <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#EAAA00]">
+                      {ch.domainShort}
                     </span>
-                  )}
+                    <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                      <span className="px-1.5 py-0.5 bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-bold">
+                        {ch.difficulty}
+                      </span>
+                      <span className="px-1.5 py-0.5 border border-[#E5DFD5] dark:border-[#3A0F34] text-[#555555] dark:text-slate-300 dark:bg-[#120516]">
+                        {ch.language}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1] leading-snug group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] transition-colors">
+                    {ch.title}
+                  </h3>
+                  <p className="mt-2 text-xs text-[#555555] dark:text-slate-300 font-sans leading-relaxed">
+                    {ch.summary}
+                  </p>
+
+                  <div className="mt-3.5 flex flex-wrap gap-1 font-mono text-[9px] text-[#7A7875] dark:text-slate-400">
+                    {ch.keyTopics.map((k) => (
+                      <span key={k} className="px-1.5 py-0.5 bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-5 pt-3 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
+                    {ch.rubricWeight}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={launchStage === 'validating' || launchStage === 'starting'}
+                    onClick={() => handleQuickLaunchChallenge(ch)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3A0F34] hover:bg-[#2A0B26] dark:bg-[#EAAA00] dark:hover:bg-[#D49800] text-white dark:text-[#120516] text-[11px] font-mono font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+                  >
+                    <span>Practice</span>
+                    <ArrowRight className="h-3 w-3 text-[#EAAA00] dark:text-[#120516]" />
+                  </button>
                 </div>
               </div>
-              <input
-                id="console-questions"
-                type="range"
-                min="3"
-                max="10"
-                step="1"
-                disabled={launchStage === 'validating' || launchStage === 'starting'}
-                value={config.questionCount}
-                onChange={(e) => {
-                  setConfig({ ...config, questionCount: Number(e.target.value) });
-                  if (errorMessage) setErrorMessage(null);
-                }}
-                className="mt-2.5 w-full accent-blue-600 cursor-pointer disabled:opacity-50"
-              />
-              <div className="mt-1 flex justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
-                <span>Min: 3 challenges</span>
-                <span>Default: 5 challenges</span>
-                <span>Max: 10 challenges</span>
-              </div>
-            </div>
-
-            {/* Actions Bar */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 self-start sm:self-auto">
-                <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                <span>Generates adaptive challenge & starter code</span>
-              </div>
-
-              <button
-                type="submit"
-                disabled={launchStage === 'validating' || launchStage === 'starting'}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-60"
-              >
-                {launchStage === 'validating' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    <span>Validating Parameters...</span>
-                  </>
-                ) : launchStage === 'starting' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    <span>Starting Session & Generating Q1...</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 fill-current" />
-                    <span>Start Technical Interview</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+            ))}
+          </div>
         </section>
 
-        {/* Right Column: Session Blueprint & Developer Utilities */}
-        <div className="lg:col-span-5 space-y-5">
-          {/* 1. Active Blueprint Summary Card */}
-          <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-xs transition-colors">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                Session Blueprint
+        {/* 5. Minimalist 4D Rubric Telemetry Bar Meters */}
+        <div className="px-4 sm:px-8 py-8 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-6">
+            <div>
+              <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold block">
+                05 / AUTHORITATIVE RUBRIC
+              </span>
+              <h3 className="font-didone text-xl font-bold text-[#111111] dark:text-[#F8F6F1] mt-0.5">
+                Four-Dimensional Weighted Scoring Vectors
               </h3>
-              <span className="font-mono text-[10px] rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 font-semibold">
-                Pydantic v2
-              </span>
             </div>
-
-            <div className="mt-3.5 space-y-2.5 text-xs">
-              <div className="flex items-center justify-between py-1 border-b border-slate-50 dark:border-slate-800/60">
-                <span className="text-slate-500 dark:text-slate-400">Evaluation Engine</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-200">Gemini 2.5 Flash / Offline Catalog</span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-50 dark:border-slate-800/60">
-                <span className="text-slate-500 dark:text-slate-400">Execution Security</span>
-                <span className="font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3" /> Zero Execution (Static)
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-50 dark:border-slate-800/60">
-                <span className="text-slate-500 dark:text-slate-400">Scoring Model</span>
-                <span className="font-semibold text-blue-700 dark:text-blue-400">Four-Dimensional Weighted (0–10)</span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-50 dark:border-slate-800/60">
-                <span className="text-slate-500 dark:text-slate-400">Adaptive Drill-Downs</span>
-                <span className="font-semibold text-amber-700 dark:text-amber-400">Max 2 Follow-Ups per challenge</span>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="text-slate-500 dark:text-slate-400">Quota Resilience</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">Exponential 429 Backoff</span>
-              </div>
-            </div>
-
-            {/* Quick weights indicator */}
-            <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1.5">
-                Evaluation Rubric Weights:
-              </span>
-              <div className="grid grid-cols-4 gap-1.5 text-center text-[10px] font-mono">
-                <div className="rounded bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700">
-                  <span className="block text-slate-500 dark:text-slate-400">Correct</span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">40%</span>
-                </div>
-                <div className="rounded bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700">
-                  <span className="block text-slate-500 dark:text-slate-400">Depth</span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">25%</span>
-                </div>
-                <div className="rounded bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700">
-                  <span className="block text-slate-500 dark:text-slate-400">Edge</span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">20%</span>
-                </div>
-                <div className="rounded bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700">
-                  <span className="block text-slate-500 dark:text-slate-400">Clarity</span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">15%</span>
-                </div>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => onNavigateTab('rubric')}
+              className="text-xs font-mono text-[#3A0F34] dark:text-[#EAAA00] hover:underline flex items-center gap-1 transition self-start sm:self-auto cursor-pointer"
+            >
+              <span>View Specification Breakdown →</span>
+            </button>
           </div>
 
-          {/* 2. Direct Resume In-Progress Session Card */}
-          <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-xs transition-colors">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5 mb-1.5">
-              <RotateCcw className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-              Resume Existing Session
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-              Reconnect to a previously created or in-progress interview using its UUID.
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Dimension 1: Correctness (40%) */}
+            <div className="relative p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1]/70 dark:bg-[#16061D]/70 rounded-none">
+              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Technical Correctness</span>
+                <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">40%</span>
+              </div>
+              <div className="h-1.5 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-none overflow-hidden">
+                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: '40%' }}></div>
+              </div>
+              <p className="text-[11px] text-[#555555] dark:text-slate-300 mt-2.5 leading-snug font-sans">
+                Algorithmic validity, structural soundness, and asymptotic bounds.
+              </p>
+            </div>
+
+            {/* Dimension 2: Depth (25%) */}
+            <div className="relative p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1]/70 dark:bg-[#16061D]/70 rounded-none">
+              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Architectural Depth</span>
+                <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">25%</span>
+              </div>
+              <div className="h-1.5 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-none overflow-hidden">
+                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: '25%' }}></div>
+              </div>
+              <p className="text-[11px] text-[#555555] dark:text-slate-300 mt-2.5 leading-snug font-sans">
+                Concurrency, component isolation, trade-offs, and scalability resilience.
+              </p>
+            </div>
+
+            {/* Dimension 3: Edge Cases (20%) */}
+            <div className="relative p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1]/70 dark:bg-[#16061D]/70 rounded-none">
+              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Edge Cases & Scale</span>
+                <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">20%</span>
+              </div>
+              <div className="h-1.5 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-none overflow-hidden">
+                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: '20%' }}></div>
+              </div>
+              <p className="text-[11px] text-[#555555] dark:text-slate-300 mt-2.5 leading-snug font-sans">
+                Failure mode mitigation, lock contention, and boundary verification.
+              </p>
+            </div>
+
+            {/* Dimension 4: Communication (15%) */}
+            <div className="relative p-4 border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#F8F6F1]/70 dark:bg-[#16061D]/70 rounded-none">
+              <div className="editorial-crosshair -top-2 -left-2 text-[#E5DFD5] dark:text-[#3A0F34]">+</div>
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Communication Clarity</span>
+                <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">15%</span>
+              </div>
+              <div className="h-1.5 w-full bg-[#E5DFD5] dark:bg-[#250C3D] rounded-none overflow-hidden">
+                <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00]" style={{ width: '15%' }}></div>
+              </div>
+              <p className="text-[11px] text-[#555555] dark:text-slate-300 mt-2.5 leading-snug font-sans">
+                Structured explanations, clean rationale, and collaborative dialogue.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 6. Deep-Dive Specification Links Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#E5DFD5] dark:divide-[#3A0F34]/50 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50">
+          <button
+            type="button"
+            onClick={() => onNavigateTab('rubric')}
+            className="group p-5 text-left bg-white/40 dark:bg-[#16061D]/40 hover:bg-white dark:hover:bg-[#250C3D]/50 transition cursor-pointer"
+          >
+            <div className="flex items-center justify-between text-xs font-bold text-[#111111] dark:text-[#F8F6F1] group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00]">
+              <span className="font-didone text-sm">Evaluation Rubric</span>
+              <ArrowRight className="h-3.5 w-3.5 text-[#7A7875] dark:text-slate-400 group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] group-hover:translate-x-0.5 transition" />
+            </div>
+            <p className="mt-1 text-[11px] text-[#555555] dark:text-slate-300 font-sans">
+              Calibrated 0.0–10.0 grading formula across 4 dimensions
             </p>
+          </button>
 
-            {resumeError && (
-              <div className="mb-3 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-800 dark:text-rose-300">
-                {resumeError}
-              </div>
-            )}
-
-            <form onSubmit={handleResume} className="flex gap-2">
-              <input
-                type="text"
-                value={resumeId}
-                onChange={(e) => {
-                  setResumeId(e.target.value);
-                  if (resumeError) setResumeError(null);
-                }}
-                placeholder="Paste Session UUID..."
-                disabled={resumeLoading}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-950/60 px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={resumeLoading || !resumeId.trim()}
-                className="rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 active:bg-slate-300 transition disabled:opacity-50 inline-flex items-center gap-1 shrink-0"
-              >
-                {resumeLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <span>Resume</span>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* 3. Secondary Documentation Cards */}
-          <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-5 transition-colors">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Engineering Reference Docs
-              </span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">Secondary Guides</span>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('workflow')}
+            className="group p-5 text-left bg-white/40 dark:bg-[#16061D]/40 hover:bg-white dark:hover:bg-[#250C3D]/50 transition cursor-pointer"
+          >
+            <div className="flex items-center justify-between text-xs font-bold text-[#111111] dark:text-[#F8F6F1] group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00]">
+              <span className="font-didone text-sm">State Lifecycle</span>
+              <ArrowRight className="h-3.5 w-3.5 text-[#7A7875] dark:text-slate-400 group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] group-hover:translate-x-0.5 transition" />
             </div>
+            <p className="mt-1 text-[11px] text-[#555555] dark:text-slate-300 font-sans">
+              Server-authoritative state transitions 01 to 04
+            </p>
+          </button>
 
-            <div className="grid grid-cols-2 gap-2 text-left">
-              <button
-                type="button"
-                onClick={() => onNavigateTab('rubric')}
-                className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-2xs transition"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                  <span>Four-D Rubric</span>
-                  <ArrowRight className="h-3 w-3 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition" />
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                  Calibrated 0.0–10.0 grading formula across 4 dimensions.
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab('workflow')}
-                className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-2xs transition"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                  <span>State Lifecycle</span>
-                  <ArrowRight className="h-3 w-3 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition" />
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                  Server-authoritative state machine 01 to 04.
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab('sample-report')}
-                className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-2xs transition"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                  <span>Sample Report</span>
-                  <ArrowRight className="h-3 w-3 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition" />
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                  Simulated 8.6 Strong Pass candidate deliverable.
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab('architecture')}
-                className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-2xs transition"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                  <span>Architecture</span>
-                  <ArrowRight className="h-3 w-3 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition" />
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                  Milestone roadmap and full-stack specs.
-                </p>
-              </button>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('sample-report')}
+            className="group p-5 text-left bg-white/40 dark:bg-[#16061D]/40 hover:bg-white dark:hover:bg-[#250C3D]/50 transition cursor-pointer"
+          >
+            <div className="flex items-center justify-between text-xs font-bold text-[#111111] dark:text-[#F8F6F1] group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00]">
+              <span className="font-didone text-sm">Sample Dossier</span>
+              <ArrowRight className="h-3.5 w-3.5 text-[#7A7875] dark:text-slate-400 group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] group-hover:translate-x-0.5 transition" />
             </div>
-          </div>
+            <p className="mt-1 text-[11px] text-[#555555] dark:text-slate-300 font-sans">
+              Inspect an executive Strong Pass evaluation deliverable
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigateTab('architecture')}
+            className="group p-5 text-left bg-white/40 dark:bg-[#16061D]/40 hover:bg-white dark:hover:bg-[#250C3D]/50 transition cursor-pointer"
+          >
+            <div className="flex items-center justify-between text-xs font-bold text-[#111111] dark:text-[#F8F6F1] group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00]">
+              <span className="font-didone text-sm">Architecture Specs</span>
+              <ArrowRight className="h-3.5 w-3.5 text-[#7A7875] dark:text-slate-400 group-hover:text-[#3A0F34] dark:group-hover:text-[#EAAA00] group-hover:translate-x-0.5 transition" />
+            </div>
+            <p className="mt-1 text-[11px] text-[#555555] dark:text-slate-300 font-sans">
+              Isolated layer design and relational data models
+            </p>
+          </button>
         </div>
       </div>
     </div>

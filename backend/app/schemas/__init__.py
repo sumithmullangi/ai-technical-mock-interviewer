@@ -1,4 +1,14 @@
 """Pydantic schemas package."""
+from app.schemas.auth import (
+    AuthTokenResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    MessageResponse,
+    ResetPasswordRequest,
+    UserLoginRequest,
+    UserResponse,
+    UserSignupRequest,
+)
 from app.schemas.interview import (
     AnswerEvaluationRequest,
     AnswerEvaluationResponse,
@@ -28,6 +38,14 @@ from app.schemas.interview import (
 )
 
 __all__ = [
+    "AuthTokenResponse",
+    "ForgotPasswordRequest",
+    "ForgotPasswordResponse",
+    "MessageResponse",
+    "ResetPasswordRequest",
+    "UserLoginRequest",
+    "UserResponse",
+    "UserSignupRequest",
     "AnswerEvaluationRequest",
     "AnswerEvaluationResponse",
     "AnswerSubmitRequest",

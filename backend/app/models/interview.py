@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
@@ -13,6 +13,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.user import UserModel
 
 
 class InterviewSessionModel(Base):
@@ -60,7 +63,18 @@ class InterviewSessionModel(Base):
         default=lambda: datetime.now(timezone.utc),
         comment="Session creation timestamp (UTC)",
     )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        comment="Owner user ID if session was created by an authenticated user",
+    )
 
+    user: Mapped[Optional["UserModel"]] = relationship(
+        "UserModel",
+        back_populates="interviews",
+    )
     primary_questions: Mapped[list["PrimaryQuestionModel"]] = relationship(
         "PrimaryQuestionModel",
         back_populates="session",
