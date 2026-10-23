@@ -117,6 +117,22 @@ function AppContent() {
       const path = window.location.pathname;
       const params = new URLSearchParams(window.location.search);
 
+      if (path === '/practice' || path === '/studio' || path === '/setup') {
+        setActiveTab('console');
+      } else if (path === '/challenges') {
+        setActiveTab('challenges');
+      } else if (path === '/workflow') {
+        setActiveTab('workflow');
+      } else if (path === '/rubric') {
+        setActiveTab('rubric');
+      } else if (path === '/sample-report') {
+        setActiveTab('sample-report');
+      } else if (path === '/architecture') {
+        setActiveTab('architecture');
+      } else if (path === '/' || path === '') {
+        setActiveTab('landing');
+      }
+
       if (path === '/login') {
         setAuthMode('login');
         setIsAuthOpen(true);
@@ -215,6 +231,20 @@ function AppContent() {
 
   const handleSelectTab = (tab: NavTab) => {
     setActiveTab(tab);
+    const pathMap: Record<NavTab, string> = {
+      landing: '/',
+      console: '/practice',
+      challenges: '/challenges',
+      workflow: '/workflow',
+      rubric: '/rubric',
+      'sample-report': '/sample-report',
+      architecture: '/architecture',
+      all: '/all',
+    };
+    const targetPath = pathMap[tab] || '/';
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, '', targetPath);
+    }
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
@@ -248,7 +278,7 @@ function AppContent() {
         health={health}
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
-        onOpenSetup={() => setIsSetupOpen(true)}
+        onOpenSetup={() => handleSelectTab('console')}
         onRefreshHealth={checkHealth}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -306,7 +336,7 @@ function AppContent() {
             {/* Public Single-Screen Landing Page */}
             {activeTab === 'landing' ? (
               <LandingPage
-                onStartPracticing={() => setIsSetupOpen(true)}
+                onStartPracticing={() => handleSelectTab('console')}
                 onHowItWorks={() => handleSelectTab('workflow')}
                 onExploreChallenges={() => handleSelectTab('challenges')}
                 onEnterStudio={() => handleSelectTab('console')}
@@ -315,7 +345,7 @@ function AppContent() {
               <InterviewConsole
                 onStartSession={(startedData) => setStartedSession(startedData)}
                 onConfigSaved={(configuredData) => setActiveSession(configuredData)}
-                onOpenSetupModal={() => setIsSetupOpen(true)}
+                onOpenSetupModal={() => handleSelectTab('console')}
                 onNavigateTab={handleSelectTab}
                 healthOk={health.status === 'ok'}
               />
@@ -340,7 +370,7 @@ function AppContent() {
       {/* Global Footer: Rendered on interior content views; LandingPage has its own single-screen bottom datum strip */}
       {!startedSession && activeTab !== 'landing' && (
         <Footer
-          onOpenSetup={() => setIsSetupOpen(true)}
+          onOpenSetup={() => handleSelectTab('console')}
           onReplayIntro={() => setShowIntro(true)}
         />
       )}

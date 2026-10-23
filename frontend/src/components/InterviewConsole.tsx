@@ -11,7 +11,6 @@ import {
   Globe,
   Database,
   CheckCircle2,
-  Sliders,
   X,
 } from 'lucide-react';
 import type {
@@ -24,7 +23,7 @@ import { apiFetch } from '../utils/api';
 interface InterviewConsoleProps {
   onStartSession: (session: StartedSessionData) => void;
   onConfigSaved: (session: ConfiguredSession) => void;
-  onOpenSetupModal: () => void;
+  onOpenSetupModal?: () => void;
   onNavigateTab: (tab: 'rubric' | 'workflow' | 'sample-report' | 'architecture' | 'challenges') => void;
   healthOk: boolean;
 }
@@ -172,7 +171,7 @@ const ROUND_PRESETS = [
 export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
   onStartSession,
   onConfigSaved,
-  onOpenSetupModal,
+  onOpenSetupModal: _onOpenSetupModal,
   onNavigateTab,
   healthOk,
 }) => {
@@ -449,15 +448,6 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                 <RotateCcw className="h-3.5 w-3.5 text-[#EAAA00]" />
                 <span>{showResumeDrawer ? 'Close Resume' : 'Resume UUID'}</span>
               </button>
-
-              <button
-                type="button"
-                onClick={onOpenSetupModal}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[#111111] dark:text-[#F8F6F1] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-all cursor-pointer font-semibold uppercase tracking-wider text-[11px]"
-              >
-                <Sliders className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
-                <span>Config Modal</span>
-              </button>
             </div>
           </div>
         </section>
@@ -538,14 +528,10 @@ export const InterviewConsole: React.FC<InterviewConsoleProps> = ({
                   Select Technical Domain
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={onOpenSetupModal}
-                className="inline-flex items-center gap-1.5 text-xs font-mono text-[#3A0F34] dark:text-[#EAAA00] hover:underline transition self-start sm:self-auto cursor-pointer"
-              >
-                <Sliders className="h-3.5 w-3.5 text-[#EAAA00]" />
-                <span>Advanced Parameters Modal →</span>
-              </button>
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono text-[#7A7875] dark:text-slate-400 self-start sm:self-auto">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
+                <span>Calibrated Production Criteria</span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
