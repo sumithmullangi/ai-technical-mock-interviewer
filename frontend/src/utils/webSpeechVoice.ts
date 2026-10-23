@@ -30,6 +30,8 @@ export interface WebSpeechVoiceCallbacks {
   onTranscriptUpdate: (transcripts: TranscriptItem[]) => void;
   onError: (errorMessage: string) => void;
   onThoughtComplete?: (thoughtText: string) => void;
+  onInterviewerSpeechEnd?: () => void;
+  onCandidateInterim?: (interimText: string) => void;
 }
 
 export interface BrowserSpeechCapabilities {
@@ -130,7 +132,7 @@ export class WebSpeechVoiceSession {
   }
 
 
-  public async start(): Promise<void> {
+  public async start(skipGreeting: boolean = false): Promise<void> {
     if (this.isSessionActive) {
       return;
     }
@@ -188,14 +190,23 @@ export class WebSpeechVoiceSession {
 
       this.setupRecognitionListeners();
 
-      // Start initial interviewer greeting & challenge statement
-      const greeting =
-        `Welcome to question ${this.questionNumber} on ${this.questionTopic}. ` +
-        `Here is your challenge: "${this.questionText}". ` +
-        `When you're ready, please explain your technical approach, data structures, and trade-offs.`;
+      if (skipGreeting) {
+        this.isSpeaking = false;
+        this.callbacks.onStatusChange('listening', 'Ready for candidate explanation...');
+        try {
+          this.recognition.start();
+        } catch {
+          // ignore already started
+        }
+      } else {
+        // Start initial interviewer greeting & challenge statement
+        const greeting =
+          `Welcome to question ${this.questionNumber} on ${this.questionTopic}. ` +
+          `Here is your challenge: "${this.questionText}". ` +
+          `When you're ready, please explain your technical approach, data structures, and trade-offs.`;
 
-      this.speakText(greeting);
-
+        this.speakText(greeting);
+      }
     } catch (err: unknown) {
       this.cleanup();
       const msg =
@@ -332,8 +343,10 @@ export class WebSpeechVoiceSession {
    * Synthesizes interviewer speech aloud via window.speechSynthesis.
    * Completely pauses SpeechRecognition to prevent audio feedback / echo.
    */
-  public speakText(text: string): void {
+  public speakText(text: string, onEnd?: () => void): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      onEnd?.();
+      this.callbacks.onInterviewerSpeechEnd?.();
       return;
     }
 
@@ -394,6 +407,8 @@ export class WebSpeechVoiceSession {
           }
         }, 250);
       }
+      onEnd?.();
+      this.callbacks.onInterviewerSpeechEnd?.();
     };
 
     utterance.onerror = () => {
@@ -410,9 +425,24 @@ export class WebSpeechVoiceSession {
           }
         }, 200);
       }
+      onEnd?.();
+      this.callbacks.onInterviewerSpeechEnd?.();
     };
 
     window.speechSynthesis.speak(utterance);
+  }
+
+  public resetForNewQuestion(
+    questionNumber: number,
+    questionText: string,
+    questionTopic: string
+  ): void {
+    this.questionNumber = questionNumber;
+    this.questionText = questionText;
+    this.questionTopic = questionTopic;
+    this.currentCandidateTranscriptId = null;
+    this.lastCandidateTranscriptId = null;
+    this.clearPauseTimer();
   }
 
   /**

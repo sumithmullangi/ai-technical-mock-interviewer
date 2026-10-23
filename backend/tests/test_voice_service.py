@@ -626,9 +626,10 @@ async def test_generate_voice_conversational_reply_network_error_fallback(monkey
 
 
 @pytest.mark.anyio
-async def test_generate_voice_conversational_reply_concept_grounding():
+async def test_generate_voice_conversational_reply_concept_grounding(monkeypatch):
     """Verify offline fallback templates incorporate expected architectural concepts."""
     from app.services.voice_service import generate_voice_conversational_reply
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
 
     concepts = ["B-Tree Indexes", "Write Amplification"]
     reply, is_offline = await generate_voice_conversational_reply(

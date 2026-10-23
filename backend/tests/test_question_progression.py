@@ -768,3 +768,71 @@ def test_advance_gemini_quota_exceeded_returns_429(monkeypatch):
         assert "Gemini rate limit exceeded" in res.json()["detail"]
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+def test_complete_interview_early_success():
+    """Verify candidate can conclude an active session early."""
+    session = _build_test_session(status="in_progress")
+    mock_db = AsyncMock(spec=AsyncSession)
+    mock_db.commit = AsyncMock()
+    mock_db.refresh = AsyncMock()
+
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = session
+    mock_db.execute.return_value = res_session
+
+    async def override_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        res = client.post("/api/v1/interviews/mock-prog-100/complete")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["is_completed"] is True
+        assert data["status"] == "completed"
+        assert session.status == "completed"
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_complete_interview_early_already_completed_idempotent():
+    """Verify completing an already-completed session returns 200 idempotently."""
+    session = _build_test_session(status="completed")
+    mock_db = AsyncMock(spec=AsyncSession)
+
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = session
+    mock_db.execute.return_value = res_session
+
+    async def override_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        res = client.post("/api/v1/interviews/mock-prog-100/complete")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["is_completed"] is True
+        assert data["status"] == "completed"
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_complete_interview_early_not_found_404():
+    """Verify 404 for unknown session."""
+    mock_db = AsyncMock(spec=AsyncSession)
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = None
+    mock_db.execute.return_value = res_session
+
+    async def override_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        res = client.post("/api/v1/interviews/non-existent-session/complete")
+        assert res.status_code == 404
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+

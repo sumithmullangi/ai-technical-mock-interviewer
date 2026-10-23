@@ -207,8 +207,22 @@ async def generate_voice_conversational_reply(
                 f"where does your solution bottleneck, and how would you optimize {primary_concept}?"
             )
 
-    # If GEMINI_API_KEY is unset or empty, use the intelligent offline fallback
+    # If GEMINI_API_KEY is unset or empty, check OpenRouter or use offline fallback
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
+        if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+            logger.info("GEMINI_API_KEY not configured. Routing voice conversational reply to OpenRouter.")
+            try:
+                from app.services.openrouter_service import generate_openrouter_voice_reply
+                return await generate_openrouter_voice_reply(
+                    role=role,
+                    difficulty=difficulty,
+                    language=language,
+                    question_text=question_text,
+                    topic=topic,
+                    candidate_speech=candidate_speech,
+                )
+            except Exception as or_err:
+                logger.warning(f"OpenRouter voice reply failed ({or_err}).")
         logger.info("Zero-cost voice mode: GEMINI_API_KEY not configured. Using offline conversational follow-up.")
         return build_offline_reply(), True
 
@@ -267,13 +281,43 @@ async def generate_voice_conversational_reply(
                     if reply_text:
                         return reply_text, False
 
-        # If HTTP 429 quota exhausted or other non-200 code, safely fallback without failing
+        # If HTTP 429 quota exhausted or other non-200 code, check OpenRouter fallback
+        if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+            logger.warning(
+                f"Gemini API returned status {response.status_code} during voice interaction. Routing to OpenRouter fallback..."
+            )
+            try:
+                from app.services.openrouter_service import generate_openrouter_voice_reply
+                return await generate_openrouter_voice_reply(
+                    role=role,
+                    difficulty=difficulty,
+                    language=language,
+                    question_text=question_text,
+                    topic=topic,
+                    candidate_speech=candidate_speech,
+                )
+            except Exception as or_err:
+                logger.warning(f"OpenRouter voice reply fallback failed ({or_err}).")
+
         logger.warning(
             f"Gemini API returned status {response.status_code} during voice interaction. Falling back to offline response."
         )
         return build_offline_reply(), True
 
     except Exception as exc:
+        if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+            try:
+                from app.services.openrouter_service import generate_openrouter_voice_reply
+                return await generate_openrouter_voice_reply(
+                    role=role,
+                    difficulty=difficulty,
+                    language=language,
+                    question_text=question_text,
+                    topic=topic,
+                    candidate_speech=candidate_speech,
+                )
+            except Exception as or_err:
+                logger.warning(f"OpenRouter voice reply fallback failed ({or_err}).")
         logger.warning(
             f"Exception during Gemini voice interaction ({type(exc).__name__}). Falling back to offline response."
         )

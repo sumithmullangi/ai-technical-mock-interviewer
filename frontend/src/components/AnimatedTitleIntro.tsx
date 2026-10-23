@@ -125,7 +125,7 @@ export const AnimatedTitleIntro: React.FC<AnimatedTitleIntroProps> = ({
 
       {/* Editorial Specimen Meta Tag */}
       <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-20 hidden sm:flex items-center gap-2 text-[10px] font-mono tracking-widest text-[#111111]/50 uppercase">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
+        <span className="h-1.5 w-1.5 rounded-full bg-[#F59E0B]"></span>
         <span>Specimen 01 / Branded Intro</span>
       </div>
 
@@ -138,7 +138,7 @@ export const AnimatedTitleIntro: React.FC<AnimatedTitleIntroProps> = ({
           aria-label="Skip introduction animation"
         >
           <span>Skip Intro</span>
-          <kbd className="rounded border border-[#111111]/20 bg-[#F8F6F1] px-1.5 py-0.5 text-[10px] font-mono text-[#3A0F34] transition-colors group-hover:border-[#EAAA00] group-hover:text-[#EAAA00]">
+          <kbd className="rounded border border-[#111111]/20 bg-[#F8F6F1] px-1.5 py-0.5 text-[10px] font-mono text-[#3A0F34] transition-colors group-hover:border-[#F59E0B] group-hover:text-[#F59E0B]">
             Esc
           </kbd>
         </button>
@@ -207,7 +207,7 @@ export const AnimatedTitleIntro: React.FC<AnimatedTitleIntroProps> = ({
           {/* Luminous Marigold & Deep Aubergine Refined Accent Horizon */}
           <div className="my-1.5 sm:my-2 flex items-center justify-center gap-2 select-none pointer-events-none opacity-90">
             <div className="h-[1px] w-12 sm:w-28 bg-gradient-to-r from-transparent via-[#3A0F34] to-transparent" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[#EAAA00] shadow-[0_0_8px_rgba(234,170,0,0.8)]" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#F59E0B] shadow-[0_0_8px_rgba(234,170,0,0.8)]" />
             <div className="h-[1px] w-12 sm:w-28 bg-gradient-to-r from-transparent via-[#3A0F34] to-transparent" />
           </div>
 
@@ -271,7 +271,7 @@ export const AnimatedTitleIntro: React.FC<AnimatedTitleIntroProps> = ({
           {/* Subtitle Branded Monogram */}
           <div className="mt-4 sm:mt-5 flex items-center justify-center gap-2 text-xs font-mono tracking-widest text-[#3A0F34] uppercase font-semibold">
             <span>AI Technical Mock Interviewer</span>
-            <span className="text-[#EAAA00]">•</span>
+            <span className="text-[#F59E0B]">•</span>
             <span>Edition 2026</span>
           </div>
         </div>

@@ -65,6 +65,10 @@ class AnswerSubmitResponse(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when answer was recorded",
     )
+    answer_text: Optional[str] = Field(
+        default=None,
+        description="Persisted candidate answer text or code",
+    )
 
 
 class EvaluationScoresSchema(BaseModel):
@@ -409,6 +413,22 @@ class InterviewQuestionSchema(BaseModel):
     expected_concepts: List[str] = Field(
         default_factory=list,
         description="Key architectural concepts or keywords expected in candidate discussion",
+    )
+
+
+class SessionStartRequest(BaseModel):
+    """Schema representing request payload when starting a session via POST body."""
+    session_id: str = Field(
+        ...,
+        description="Unique session identifier (mock-xxxx)",
+    )
+
+
+class SessionCompleteRequest(BaseModel):
+    """Schema representing request payload when completing a session via POST body."""
+    session_id: str = Field(
+        ...,
+        description="Unique session identifier (mock-xxxx)",
     )
 
 

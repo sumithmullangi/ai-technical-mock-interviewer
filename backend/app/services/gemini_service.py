@@ -548,8 +548,22 @@ async def generate_interview_question(
       safely falls back to the deterministic offline mock question catalog.
     - If allow_offline is False, raises GeminiQuotaExceededError or GeminiProviderError.
     """
-    # 1. Offline Mode when no API key is provided
+    # 1. Offline Mode or OpenRouter fallback when no Gemini API key is provided
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
+        if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+            logger.info("GEMINI_API_KEY not configured. Routing question generation to OpenRouter secondary provider.")
+            try:
+                from app.services.openrouter_service import generate_openrouter_question
+                return await generate_openrouter_question(
+                    role=role,
+                    difficulty=difficulty,
+                    primary_language=primary_language,
+                    question_number=question_number,
+                    previous_topics=previous_topics,
+                    client=client,
+                )
+            except Exception as or_err:
+                logger.warning(f"OpenRouter question generation failed ({or_err}).")
         if not allow_offline:
             raise GeminiProviderError(
                 "Gemini API key is not configured. Please set GEMINI_API_KEY in the environment or .env file to enable question generation."
@@ -588,6 +602,25 @@ async def generate_interview_question(
             error_preview = response.text[:200]
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+
+            # Check if OpenRouter fallback is configured before failing or falling back to offline
+            if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+                logger.warning(
+                    f"Gemini API returned status {response.status_code}. Routing question generation to OpenRouter fallback ({settings.OPENROUTER_MODEL})..."
+                )
+                try:
+                    from app.services.openrouter_service import generate_openrouter_question
+                    return await generate_openrouter_question(
+                        role=role,
+                        difficulty=difficulty,
+                        primary_language=primary_language,
+                        question_number=question_number,
+                        previous_topics=previous_topics,
+                        client=client,
+                    )
+                except Exception as or_err:
+                    logger.warning(f"OpenRouter fallback question generation also failed ({or_err}).")
+
             if response.status_code == 429:
                 is_quota_exhausted, retry_sec, clean_msg = parse_gemini_429_details(response)
                 if allow_offline:
@@ -802,6 +835,18 @@ async def evaluate_candidate_answer(
     If GEMINI_API_KEY is not configured, raises GeminiProviderError with an actionable message.
     """
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
+        if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+            logger.info("GEMINI_API_KEY not configured. Routing evaluation to OpenRouter secondary provider.")
+            from app.services.openrouter_service import evaluate_openrouter_answer
+            return await evaluate_openrouter_answer(
+                role=role,
+                difficulty=difficulty,
+                primary_language=primary_language,
+                question_text=question_text,
+                expected_concepts=expected_concepts,
+                answer_text=answer_text,
+                client=client,
+            )
         raise GeminiProviderError(
             "Gemini API key is not configured. Please set GEMINI_API_KEY in backend/.env to enable AI evaluation."
         )
@@ -831,6 +876,26 @@ async def evaluate_candidate_answer(
             error_preview = response.text[:200]
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+
+            # Check if OpenRouter fallback is configured before failing
+            if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+                logger.warning(
+                    f"Gemini API evaluation failed (HTTP {response.status_code}). Routing to OpenRouter fallback ({settings.OPENROUTER_MODEL})..."
+                )
+                try:
+                    from app.services.openrouter_service import evaluate_openrouter_answer
+                    return await evaluate_openrouter_answer(
+                        role=role,
+                        difficulty=difficulty,
+                        primary_language=primary_language,
+                        question_text=question_text,
+                        expected_concepts=expected_concepts,
+                        answer_text=answer_text,
+                        client=client,
+                    )
+                except Exception as or_err:
+                    logger.warning(f"OpenRouter evaluation fallback also failed ({or_err}).")
+
             if response.status_code == 429:
                 is_quota_exhausted, retry_sec, clean_msg = parse_gemini_429_details(response)
                 raise GeminiQuotaExceededError(
@@ -883,6 +948,23 @@ async def evaluate_candidate_answer(
         return validated_eval, overall_score
 
     except httpx.RequestError as exc:
+        if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+            logger.warning(
+                f"Gemini network error during evaluation ({type(exc).__name__}). Routing to OpenRouter fallback..."
+            )
+            try:
+                from app.services.openrouter_service import evaluate_openrouter_answer
+                return await evaluate_openrouter_answer(
+                    role=role,
+                    difficulty=difficulty,
+                    primary_language=primary_language,
+                    question_text=question_text,
+                    expected_concepts=expected_concepts,
+                    answer_text=answer_text,
+                    client=client,
+                )
+            except Exception as or_err:
+                logger.warning(f"OpenRouter evaluation fallback also failed ({or_err}).")
         raise GeminiProviderError(
             f"Network connectivity error while calling Gemini API: {type(exc).__name__}"
         ) from exc
@@ -1021,6 +1103,21 @@ async def generate_follow_up_question(
     - Validates output structure with FollowUpQuestionOutput.
     """
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
+        if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+            logger.info("GEMINI_API_KEY not configured. Routing follow-up generation to OpenRouter secondary provider.")
+            from app.services.openrouter_service import generate_openrouter_follow_up
+            return await generate_openrouter_follow_up(
+                role=role,
+                difficulty=difficulty,
+                primary_language=primary_language,
+                primary_question_number=primary_question_number,
+                primary_question_text=primary_question_text,
+                follow_up_number=follow_up_number,
+                candidate_answer_text=candidate_answer_text,
+                evaluation_feedback=evaluation_feedback,
+                missing_concepts=missing_concepts,
+                client=client,
+            )
         raise GeminiProviderError(
             "Gemini API key is not configured. Please set GEMINI_API_KEY in backend/.env to enable follow-up generation."
         )
@@ -1053,6 +1150,29 @@ async def generate_follow_up_question(
             error_preview = response.text[:200]
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+
+            # Check if OpenRouter fallback is configured before failing
+            if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+                logger.warning(
+                    f"Gemini API follow-up generation failed (HTTP {response.status_code}). Routing to OpenRouter fallback ({settings.OPENROUTER_MODEL})..."
+                )
+                try:
+                    from app.services.openrouter_service import generate_openrouter_follow_up
+                    return await generate_openrouter_follow_up(
+                        role=role,
+                        difficulty=difficulty,
+                        primary_language=primary_language,
+                        primary_question_number=primary_question_number,
+                        primary_question_text=primary_question_text,
+                        follow_up_number=follow_up_number,
+                        candidate_answer_text=candidate_answer_text,
+                        evaluation_feedback=evaluation_feedback,
+                        missing_concepts=missing_concepts,
+                        client=client,
+                    )
+                except Exception as or_err:
+                    logger.warning(f"OpenRouter follow-up generation fallback also failed ({or_err}).")
+
             if response.status_code == 429:
                 is_quota_exhausted, retry_sec, clean_msg = parse_gemini_429_details(response)
                 raise GeminiQuotaExceededError(
@@ -1258,6 +1378,28 @@ async def generate_report_narrative(
     If allow_fallback is False, raises GeminiProviderError or GeminiValidationError.
     """
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
+        if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+            logger.info("GEMINI_API_KEY not configured. Routing report narrative generation to OpenRouter secondary provider.")
+            try:
+                from app.services.openrouter_service import generate_openrouter_report_narrative
+                return await generate_openrouter_report_narrative(
+                    role=role,
+                    difficulty=difficulty,
+                    primary_language=primary_language,
+                    total_questions=total_questions,
+                    answered_questions=answered_questions,
+                    evaluated_questions=evaluated_questions,
+                    overall_score=overall_score,
+                    scores=scores,
+                    topics=topics,
+                    aggregated_strengths=aggregated_strengths,
+                    aggregated_missing_concepts=aggregated_missing_concepts,
+                    aggregated_suggestions=aggregated_suggestions,
+                    performance_rating=performance_rating,
+                    client=client,
+                )
+            except Exception as or_err:
+                logger.warning(f"OpenRouter report narrative generation failed ({or_err}).")
         if allow_fallback:
             return synthesize_deterministic_report_narrative(
                 role=role,
@@ -1306,6 +1448,32 @@ async def generate_report_narrative(
             error_preview = response.text[:200]
             if settings.GEMINI_API_KEY in error_preview:
                 error_preview = error_preview.replace(settings.GEMINI_API_KEY, "<REDACTED>")
+
+            # Check if OpenRouter fallback is configured before falling back to deterministic template
+            if settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip():
+                logger.warning(
+                    f"Gemini report narrative generation returned HTTP {response.status_code}. Routing to OpenRouter fallback ({settings.OPENROUTER_MODEL})..."
+                )
+                try:
+                    from app.services.openrouter_service import generate_openrouter_report_narrative
+                    return await generate_openrouter_report_narrative(
+                        role=role,
+                        difficulty=difficulty,
+                        primary_language=primary_language,
+                        total_questions=total_questions,
+                        answered_questions=answered_questions,
+                        evaluated_questions=evaluated_questions,
+                        overall_score=overall_score,
+                        scores=scores,
+                        topics=topics,
+                        aggregated_strengths=aggregated_strengths,
+                        aggregated_missing_concepts=aggregated_missing_concepts,
+                        aggregated_suggestions=aggregated_suggestions,
+                        performance_rating=performance_rating,
+                        client=client,
+                    )
+                except Exception as or_err:
+                    logger.warning(f"OpenRouter report narrative generation fallback also failed ({or_err}).")
             if allow_fallback:
                 logger.warning(
                     f"Gemini report narrative generation returned HTTP {response.status_code}. Using deterministic synthesis."

@@ -24,19 +24,39 @@
 
 /* 2. Tailwind CSS v4 Theme Font Mappings */
 @theme {
-  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-serif: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, Cambria, 'Times New Roman', serif;
-  --font-didone: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, serif;
+  --font-serif: 'Newsreader', 'Playfair Display', 'Bodoni Moda', 'Didot', Georgia, Cambria, 'Times New Roman', serif;
+  --font-didone: 'Newsreader', 'Playfair Display', 'Bodoni Moda', 'Didot', Georgia, serif;
+
+  --color-ivory: #F8F6F1;
+  --color-ivory-elevated: #FAF8F5;
+  --color-aubergine: #3A0F34;
+  --color-aubergine-light: #4E1446;
+  --color-aubergine-dark: #2B0B27;
+  --color-marigold: #EAAA00;
+  --color-marigold-hover: #D89C00;
+  --color-silver: #DDE3E8;
+  --color-grid: #E5DFD5;
+  --color-ink: #111111;
+
+  /* Obsidian + Amber Design Tokens */
+  --color-obsidian: #09090B;
+  --color-obsidian-surface: #121215;
+  --color-obsidian-card: #151518;
+  --color-obsidian-elevated: #1B1B20;
+  --color-obsidian-border: #26262D;
+  --color-amber-500: #F59E0B;
+  --color-amber-600: #D97706;
 }
 
 /* 3. Base Typographic Hierarchy & Precision Architectural Grid */
 @layer base {
   :root {
-    --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --font-serif: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, Cambria, 'Times New Roman', serif;
-    --font-didone: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, serif;
+    --font-serif: 'Newsreader', 'Playfair Display', 'Bodoni Moda', Georgia, Cambria, 'Times New Roman', serif;
+    --font-didone: 'Newsreader', 'Playfair Display', 'Bodoni Moda', Georgia, serif;
 
     /* Editorial Palette */
     --color-ivory: #F8F6F1;
@@ -56,15 +76,14 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #FAF8F5;
-    /* Delicate high-end architectural dot matrix with subtle ambient aura */
+    background-color: #09090B;
     background-image: 
-      radial-gradient(circle at 50% -10%, rgba(58, 15, 52, 0.05) 0%, transparent 60%),
-      radial-gradient(rgba(58, 15, 52, 0.065) 1px, transparent 1px);
+      radial-gradient(circle at 50% -10%, rgba(245, 158, 11, 0.08) 0%, transparent 60%),
+      radial-gradient(rgba(245, 158, 11, 0.035) 1px, transparent 1px);
     background-size: 100% 100%, 24px 24px;
     background-position: center top;
     background-attachment: fixed;
-    color: #111111;
+    color: #F4F4F5;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -75,14 +94,14 @@
   }
 
   html.dark body {
-    background-color: #100414;
+    background-color: #09090B;
     background-image: 
-      radial-gradient(circle at 50% -10%, rgba(58, 15, 52, 0.45) 0%, transparent 65%),
-      radial-gradient(rgba(234, 170, 0, 0.05) 1px, transparent 1px);
+      radial-gradient(circle at 50% -10%, rgba(245, 158, 11, 0.09) 0%, transparent 65%),
+      radial-gradient(rgba(245, 158, 11, 0.04) 1px, transparent 1px);
     background-size: 100% 100%, 24px 24px;
     background-position: center top;
     background-attachment: fixed;
-    color: #F8F6F1;
+    color: #F4F4F5;
   }
 
   /* Headings with deliberate line-height and proportional tracking */
@@ -105,26 +124,26 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(58, 15, 52, 0.18);
+    background: rgba(245, 158, 11, 0.25);
     border-radius: 9999px;
   }
   html.dark ::-webkit-scrollbar-thumb {
-    background: rgba(234, 170, 0, 0.25);
+    background: rgba(245, 158, 11, 0.3);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(58, 15, 52, 0.35);
+    background: rgba(245, 158, 11, 0.5);
   }
   html.dark ::-webkit-scrollbar-thumb:hover {
-    background: rgba(234, 170, 0, 0.45);
+    background: rgba(245, 158, 11, 0.6);
   }
 
   ::selection {
-    background: #3A0F34;
-    color: #EAAA00;
+    background: #F59E0B;
+    color: #09090B;
   }
   html.dark ::selection {
-    background: #EAAA00;
-    color: #100414;
+    background: #F59E0B;
+    color: #09090B;
   }
 }
 

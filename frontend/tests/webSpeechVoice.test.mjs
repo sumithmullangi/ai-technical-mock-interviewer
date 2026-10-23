@@ -474,3 +474,37 @@ test('WebSpeechVoiceSession repeated starts and stops clean up properly without 
   session.end();
   assert.equal(session['isSessionActive'], false);
 });
+
+test('WebSpeechVoiceSession start(true) skips greeting utterance and immediately begins listening', async () => {
+  const env = createMockWindowEnvironment({
+    hasRecognition: true,
+    hasSynthesis: true,
+  });
+  setMockGlobals(env);
+
+  let statusReported = null;
+  const session = new WebSpeechVoiceSession(
+    'sess-skip-greeting',
+    1,
+    'Explain BFS vs DFS',
+    'Graph Algorithms',
+    {
+      onStatusChange: (status) => {
+        statusReported = status;
+      },
+      onTranscriptUpdate: () => {},
+      onError: () => {},
+    }
+  );
+
+  await session.start(true);
+
+  // Synthesis speak should NOT have been called with the greeting
+  assert.equal(env.getActiveUtterance(), null);
+  assert.equal(env.getSynthesis().speaking, false);
+  // Recognition should be started immediately
+  assert.equal(env.getRecognitionInstance()?.started, true);
+  assert.equal(statusReported, 'listening');
+
+  session.cleanup();
+});

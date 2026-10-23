@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     OPENAI_REALTIME_MODEL: str = "gpt-realtime"
     OPENAI_REALTIME_VOICE: str = "verse"
 
+    # OpenRouter Secondary Fallback AI Configuration
+    OPENROUTER_API_KEY: Optional[str] = Field(default=None, repr=False)
+    OPENROUTER_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+
     # Authentication & Security Configuration
     SECRET_KEY: str = Field(default=DEV_DEFAULT_SECRET_KEY, repr=False)
     ALGORITHM: str = "HS256"
@@ -57,7 +62,7 @@ class Settings(BaseSettings):
     AUTH_COOKIE_DOMAIN: Optional[str] = None
     FRONTEND_URL: str = "http://localhost:5173"
 
-    @field_validator("GEMINI_API_KEY", "OPENAI_API_KEY", mode="before")
+    @field_validator("GEMINI_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", mode="before")
     @classmethod
     def assemble_api_key(cls, v: Optional[str]) -> Optional[str]:
         if isinstance(v, str):

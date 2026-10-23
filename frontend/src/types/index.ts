@@ -5,11 +5,39 @@ export interface HealthStatus {
   error?: string;
 }
 
+export type InterviewMode = 'voice' | 'text';
+
+export type InterviewStateMachineState =
+  | 'INITIALIZING'
+  | 'ASKING_QUESTION'
+  | 'LISTENING'
+  | 'PROCESSING_ANSWER'
+  | 'SAVING_ANSWER'
+  | 'EVALUATING_ANSWER'
+  | 'PREPARING_NEXT_QUESTION'
+  | 'SPEAKING'
+  | 'SESSION_COMPLETING'
+  | 'COMPLETED'
+  | 'ERROR';
+
+export interface ConversationMessage {
+  id: string;
+  speaker: 'interviewer' | 'candidate' | 'system';
+  text: string;
+  timestamp: string;
+  questionNumber?: number;
+  isFollowUp?: boolean;
+  followUpNumber?: number;
+  evaluation?: AnswerEvaluationData;
+  isVoice?: boolean;
+}
+
 export interface InterviewConfig {
   role: string;
   difficulty: 'Junior' | 'Mid' | 'Senior' | 'Staff';
   primaryLanguage: 'Python' | 'Java' | 'SQL';
   questionCount: number;
+  mode?: InterviewMode;
 }
 
 export interface ConfiguredSession {
@@ -51,6 +79,7 @@ export interface StartedSessionData {
   started_at: string;
   startedAt?: string;
   config?: InterviewConfig;
+  mode?: InterviewMode;
 }
 
 export interface LaunchSessionState {

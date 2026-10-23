@@ -403,6 +403,53 @@ async def submit_candidate_answer(
             ),
         )
 
+    # Check if an answer was already submitted for this question
+    existing_stmt = (
+        select(CandidateAnswerModel)
+        .where(
+            CandidateAnswerModel.session_id == session_id,
+            CandidateAnswerModel.question_number == request.question_number,
+        )
+        .order_by(CandidateAnswerModel.submitted_at.desc())
+    )
+    existing_res = await db.execute(existing_stmt)
+    existing_scalars = getattr(existing_res, "scalars", None)
+    existing_answer = existing_scalars().first() if callable(existing_scalars) else getattr(existing_res, "scalar_one_or_none", lambda: None)()
+
+    if isinstance(existing_answer, CandidateAnswerModel):
+        eval_check_stmt = select(AnswerEvaluationModel).where(
+            AnswerEvaluationModel.answer_id == existing_answer.id
+        )
+        eval_check_res = await db.execute(eval_check_stmt)
+        eval_check_val = eval_check_res.scalar_one_or_none() if hasattr(eval_check_res, "scalar_one_or_none") else None
+        if isinstance(eval_check_val, AnswerEvaluationModel):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Candidate answer for question #{request.question_number} in session '{session_id}' has already been evaluated.",
+            )
+        # Idempotently update the existing answer text for retries
+        existing_answer.answer_text = request.answer_text
+        existing_answer.submitted_at = datetime.now(timezone.utc)
+        try:
+            await db.commit()
+            await db.refresh(existing_answer)
+        except Exception as exc:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Database transaction failed while updating answer: {type(exc).__name__}",
+            ) from exc
+
+        return AnswerSubmitResponse(
+            status="submitted",
+            answer_id=existing_answer.id,
+            session_id=session_record.id,
+            question_number=existing_answer.question_number,
+            message="Answer updated and persisted successfully.",
+            submitted_at=existing_answer.submitted_at,
+            answer_text=existing_answer.answer_text,
+        )
+
     answer_id = f"ans-{uuid.uuid4().hex[:12]}"
     submitted_at = datetime.now(timezone.utc)
 
@@ -432,6 +479,7 @@ async def submit_candidate_answer(
         question_number=answer_record.question_number,
         message="Answer submitted and persisted successfully.",
         submitted_at=answer_record.submitted_at,
+        answer_text=answer_record.answer_text,
     )
 
 
@@ -1216,6 +1264,76 @@ async def advance_interview_question(
         advanced_at=new_pq.created_at,
     )
 
+@router.post(
+    "/{session_id}/complete",
+    response_model=SessionAdvanceResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Complete an active interview session early",
+)
+async def complete_interview_early(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
+) -> SessionAdvanceResponse:
+    """Manually completes an active interview session early so report can be viewed."""
+    session_stmt = (
+        select(InterviewSessionModel)
+        .where(InterviewSessionModel.id == session_id)
+        .with_for_update()
+    )
+    session_result = await db.execute(session_stmt)
+    session_record = session_result.scalar_one_or_none()
+    if session_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session '{session_id}' not found.",
+        )
+
+    verify_session_access(session_record, current_user)
+
+    if session_record.status == SessionStatus.COMPLETED.value:
+        return SessionAdvanceResponse(
+            status=SessionStatus.COMPLETED,
+            session_id=session_record.id,
+            current_question=None,
+            question_number=session_record.question_count,
+            total_questions=session_record.question_count,
+            is_completed=True,
+            message=f"Interview session '{session_id}' was already completed.",
+            advanced_at=datetime.now(timezone.utc),
+        )
+
+    if session_record.status != SessionStatus.IN_PROGRESS.value:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Cannot complete session '{session_id}' with status '{session_record.status}'. "
+                f"Only sessions in '{SessionStatus.IN_PROGRESS.value}' state can be completed."
+            ),
+        )
+
+    session_record.status = SessionStatus.COMPLETED.value
+    try:
+        await db.commit()
+        await db.refresh(session_record)
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database transaction failed while completing interview: {type(exc).__name__}",
+        ) from exc
+
+    return SessionAdvanceResponse(
+        status=SessionStatus.COMPLETED,
+        session_id=session_record.id,
+        current_question=None,
+        question_number=session_record.question_count,
+        total_questions=session_record.question_count,
+        is_completed=True,
+        message="Interview session completed early by candidate.",
+        advanced_at=datetime.now(timezone.utc),
+    )
+
 
 @router.get(
     "/{session_id}/questions",
@@ -1260,6 +1378,106 @@ async def list_primary_questions(
             created_at=r.created_at,
         )
         for r in records
+    ]
+
+
+@router.get(
+    "/{session_id}/question",
+    response_model=PrimaryQuestionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve the current active primary question for the interview session",
+)
+@router.get(
+    "/{session_id}/current-question",
+    response_model=PrimaryQuestionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve the current active primary question (alias)",
+)
+async def get_current_question(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
+) -> PrimaryQuestionResponse:
+    """Retrieves the latest generated primary question for the session."""
+    session_stmt = select(InterviewSessionModel).where(InterviewSessionModel.id == session_id)
+    session_result = await db.execute(session_stmt)
+    session_record = session_result.scalar_one_or_none()
+    if session_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session '{session_id}' not found.",
+        )
+
+    verify_session_access(session_record, current_user)
+
+    stmt = (
+        select(PrimaryQuestionModel)
+        .where(PrimaryQuestionModel.session_id == session_id)
+        .order_by(PrimaryQuestionModel.question_number.desc())
+    )
+    result = await db.execute(stmt)
+    latest_pq = result.scalars().first()
+    if latest_pq is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No questions have been generated yet for session '{session_id}'.",
+        )
+
+    return PrimaryQuestionResponse(
+        id=latest_pq.id,
+        session_id=latest_pq.session_id,
+        question_number=latest_pq.question_number,
+        topic=latest_pq.topic,
+        difficulty=SeniorityLevel(latest_pq.difficulty),
+        question_text=latest_pq.question_text,
+        starter_code=latest_pq.starter_code,
+        expected_concepts=latest_pq.expected_concepts,
+        created_at=latest_pq.created_at,
+    )
+
+
+@router.get(
+    "/{session_id}/answers",
+    response_model=List[AnswerSubmitResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List all candidate answers submitted for this session",
+)
+async def list_candidate_answers(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user),
+) -> List[AnswerSubmitResponse]:
+    """Retrieves all candidate answers submitted for this session in order."""
+    session_stmt = select(InterviewSessionModel).where(InterviewSessionModel.id == session_id)
+    session_result = await db.execute(session_stmt)
+    session_record = session_result.scalar_one_or_none()
+    if session_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session '{session_id}' not found.",
+        )
+
+    verify_session_access(session_record, current_user)
+
+    stmt = (
+        select(CandidateAnswerModel)
+        .where(CandidateAnswerModel.session_id == session_id)
+        .order_by(CandidateAnswerModel.question_number.asc())
+    )
+    result = await db.execute(stmt)
+    answers = result.scalars().all()
+
+    return [
+        AnswerSubmitResponse(
+            status="submitted",
+            answer_id=a.id,
+            session_id=a.session_id,
+            question_number=a.question_number,
+            message="Persisted candidate answer.",
+            submitted_at=a.submitted_at,
+            answer_text=a.answer_text,
+        )
+        for a in answers
     ]
 
 

@@ -5,7 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.main import app
-from app.models.interview import CandidateAnswerModel, InterviewSessionModel
+from app.models.interview import (
+    AnswerEvaluationModel,
+    CandidateAnswerModel,
+    InterviewSessionModel,
+    PrimaryQuestionModel,
+)
 
 
 client = TestClient(app)
@@ -299,4 +304,217 @@ def test_submit_answer_plural_route_alias():
         assert data["question_number"] == 1
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+def test_submit_answer_idempotent_update_when_unevaluated():
+    """Verify resubmitting an answer for the same question before evaluation updates it idempotently."""
+    active_session = InterviewSessionModel(
+        id="mock-update-sess-1",
+        role="Backend Engineer",
+        difficulty="Senior",
+        primary_language="Python",
+        question_count=5,
+        status="in_progress",
+        created_at=datetime.now(timezone.utc),
+    )
+    existing_answer = CandidateAnswerModel(
+        id="ans-existing-123",
+        session_id="mock-update-sess-1",
+        question_number=1,
+        answer_text="Initial candidate draft.",
+        submitted_at=datetime.now(timezone.utc),
+    )
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = active_session
+
+    res_existing_ans = MagicMock()
+    res_existing_ans.scalars.return_value.first.return_value = existing_answer
+
+    res_eval_check = MagicMock()
+    res_eval_check.scalar_one_or_none.return_value = None  # Not evaluated yet
+
+    mock_session.execute = AsyncMock(side_effect=[res_session, res_existing_ans, res_eval_check])
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
+
+    async def override_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        payload = {
+            "question_number": 1,
+            "answer_text": "Updated refined solution with connection pooling.",
+        }
+        res = client.post("/api/v1/interviews/mock-update-sess-1/answer", json=payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "submitted"
+        assert data["answer_id"] == "ans-existing-123"
+        assert data["answer_text"] == "Updated refined solution with connection pooling."
+        assert "updated" in data["message"].lower()
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_submit_answer_duplicate_rejected_after_evaluation_409():
+    """Verify submitting an answer for an already-evaluated question returns HTTP 409 Conflict."""
+    active_session = InterviewSessionModel(
+        id="mock-conflict-sess-1",
+        role="Backend Engineer",
+        difficulty="Senior",
+        primary_language="Python",
+        question_count=5,
+        status="in_progress",
+        created_at=datetime.now(timezone.utc),
+    )
+    existing_answer = CandidateAnswerModel(
+        id="ans-already-evaluated-456",
+        session_id="mock-conflict-sess-1",
+        question_number=1,
+        answer_text="Original evaluated solution.",
+        submitted_at=datetime.now(timezone.utc),
+    )
+    existing_eval = AnswerEvaluationModel(
+        id="eval-456",
+        answer_id="ans-already-evaluated-456",
+        session_id="mock-conflict-sess-1",
+        correctness_score=9.0,
+        technical_depth_score=8.5,
+        edge_cases_score=8.0,
+        communication_score=9.0,
+        overall_score=8.7,
+        feedback="Great answer.",
+        created_at=datetime.now(timezone.utc),
+    )
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = active_session
+
+    res_existing_ans = MagicMock()
+    res_existing_ans.scalars.return_value.first.return_value = existing_answer
+
+    res_eval_check = MagicMock()
+    res_eval_check.scalar_one_or_none.return_value = existing_eval
+
+    mock_session.execute = AsyncMock(side_effect=[res_session, res_existing_ans, res_eval_check])
+
+    async def override_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        payload = {
+            "question_number": 1,
+            "answer_text": "Trying to overwrite evaluated answer.",
+        }
+        res = client.post("/api/v1/interviews/mock-conflict-sess-1/answer", json=payload)
+        assert res.status_code == 409
+        assert "already been evaluated" in res.json()["detail"]
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_get_current_question_success():
+    """Verify GET /{session_id}/question returns latest primary question."""
+    active_session = InterviewSessionModel(
+        id="mock-q-sess-1",
+        role="Backend Engineer",
+        difficulty="Senior",
+        primary_language="Python",
+        question_count=5,
+        status="in_progress",
+        created_at=datetime.now(timezone.utc),
+    )
+    pq = PrimaryQuestionModel(
+        id="pq-active-789",
+        session_id="mock-q-sess-1",
+        question_number=2,
+        topic="Distributed Consensus",
+        difficulty="Senior",
+        question_text="Explain Raft log replication and leader election.",
+        starter_code="class RaftNode: pass",
+        expected_concepts=["Log Matching Property", "Leader Election Quorum"],
+        created_at=datetime.now(timezone.utc),
+    )
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = active_session
+
+    res_pq = MagicMock()
+    res_pq.scalars.return_value.first.return_value = pq
+
+    mock_session.execute = AsyncMock(side_effect=[res_session, res_pq])
+
+    async def override_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        res = client.get("/api/v1/interviews/mock-q-sess-1/question")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["id"] == "pq-active-789"
+        assert data["question_number"] == 2
+        assert data["topic"] == "Distributed Consensus"
+        assert "Raft log replication" in data["question_text"]
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_list_candidate_answers_success():
+    """Verify GET /{session_id}/answers lists candidate answers in order."""
+    active_session = InterviewSessionModel(
+        id="mock-list-ans-sess",
+        role="Backend Engineer",
+        difficulty="Senior",
+        primary_language="Python",
+        question_count=5,
+        status="in_progress",
+        created_at=datetime.now(timezone.utc),
+    )
+    ans1 = CandidateAnswerModel(
+        id="ans-1",
+        session_id="mock-list-ans-sess",
+        question_number=1,
+        answer_text="First answer text.",
+        submitted_at=datetime.now(timezone.utc),
+    )
+    ans2 = CandidateAnswerModel(
+        id="ans-2",
+        session_id="mock-list-ans-sess",
+        question_number=2,
+        answer_text="Second answer text.",
+        submitted_at=datetime.now(timezone.utc),
+    )
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    res_session = MagicMock()
+    res_session.scalar_one_or_none.return_value = active_session
+
+    res_answers = MagicMock()
+    res_answers.scalars.return_value.all.return_value = [ans1, ans2]
+
+    mock_session.execute = AsyncMock(side_effect=[res_session, res_answers])
+
+    async def override_db():
+        yield mock_session
+
+    app.dependency_overrides[get_db] = override_db
+    try:
+        res = client.get("/api/v1/interviews/mock-list-ans-sess/answers")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data) == 2
+        assert data[0]["question_number"] == 1
+        assert data[0]["answer_text"] == "First answer text."
+        assert data[1]["question_number"] == 2
+        assert data[1]["answer_text"] == "Second answer text."
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
 

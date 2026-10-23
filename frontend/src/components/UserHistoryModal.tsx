@@ -76,19 +76,19 @@ export const UserHistoryModal: React.FC<UserHistoryModalProps> = ({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-2xl bg-[#FAF8F5] dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] rounded-3xl shadow-2xl flex flex-col max-h-[85vh] transition-colors text-[#111111] dark:text-[#F8F6F1] overflow-hidden">
+      <div className="relative w-full max-w-2xl bg-[#FAF8F5] dark:bg-[#141417] border border-[#E5DFD5] dark:border-[#27272E] rounded-3xl shadow-2xl flex flex-col max-h-[85vh] transition-colors text-[#111111] dark:text-[#F4F4F5] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
+        <div className="flex items-center justify-between p-6 border-b border-[#E5DFD5] dark:border-[#232328]">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#3A0F34] dark:bg-[#250C3D] text-white shadow-xs">
-              <History className="h-5 w-5 text-[#EAAA00]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E5DFD5] dark:border-[#2A2A30] bg-[#3A0F34] dark:bg-[#18181C] text-white shadow-xs">
+              <History className="h-5 w-5 text-[#F59E0B] dark:text-[#F59E0B]" />
             </div>
             <div>
-              <h2 className="font-didone text-xl font-bold text-[#111111] dark:text-[#F8F6F1]">
+              <h2 className="font-didone text-xl font-bold text-[#111111] dark:text-[#F4F4F5]">
                 Candidate Dossier & History
               </h2>
-              <p className="text-xs text-[#7A7875] dark:text-slate-400 font-mono">
-                Saved sessions for <span className="font-semibold text-[#3A0F34] dark:text-[#EAAA00]">{user?.email}</span>
+              <p className="text-xs text-[#7A7875] dark:text-[#A1A1AA] font-mono">
+                Saved sessions for <span className="font-semibold text-[#3A0F34] dark:text-[#F59E0B]">{user?.email}</span>
               </p>
             </div>
           </div>
@@ -96,14 +96,14 @@ export const UserHistoryModal: React.FC<UserHistoryModalProps> = ({
             <button
               onClick={fetchHistory}
               disabled={isLoading}
-              className="p-2 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D] transition disabled:opacity-50 cursor-pointer shadow-xs"
+              className="p-2 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] text-[#7A7875] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#F4F4F5] hover:bg-white dark:hover:bg-[#18181C] transition disabled:opacity-50 cursor-pointer shadow-xs"
               title="Refresh history"
             >
-              <RefreshCw className={`h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00] ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 text-[#3A0F34] dark:text-[#F59E0B] ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] text-[#7A7875] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#F8F6F1] hover:bg-white dark:hover:bg-[#250C3D] transition cursor-pointer shadow-xs"
+              className="p-2 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] text-[#7A7875] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#F4F4F5] hover:bg-white dark:hover:bg-[#18181C] transition cursor-pointer shadow-xs"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -114,8 +114,8 @@ export const UserHistoryModal: React.FC<UserHistoryModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {isLoading && history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-[#7A7875] dark:text-slate-400 gap-3">
-              <Loader2 className="h-6 w-6 animate-spin text-[#3A0F34] dark:text-[#EAAA00]" />
+            <div className="flex flex-col items-center justify-center py-12 text-[#7A7875] dark:text-[#A1A1AA] gap-3">
+              <Loader2 className="h-6 w-6 animate-spin text-[#3A0F34] dark:text-[#F59E0B]" />
               <span className="text-xs font-mono">Loading dossier records...</span>
             </div>
           ) : error ? (
@@ -124,12 +124,12 @@ export const UserHistoryModal: React.FC<UserHistoryModalProps> = ({
               <span>{error}</span>
             </div>
           ) : history.length === 0 ? (
-            <div className="text-center py-12 text-[#7A7875] dark:text-slate-400 space-y-2">
-              <FileText className="h-8 w-8 mx-auto text-[#7A7875] dark:text-slate-500" />
-              <p className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">
+            <div className="text-center py-12 text-[#7A7875] dark:text-[#A1A1AA] space-y-2">
+              <FileText className="h-8 w-8 mx-auto text-[#7A7875] dark:text-[#71717A]" />
+              <p className="font-didone text-base font-bold text-[#111111] dark:text-[#F4F4F5]">
                 No interview sessions recorded yet
               </p>
-              <p className="text-xs text-[#7A7875] dark:text-slate-400 max-w-sm mx-auto font-sans">
+              <p className="text-xs text-[#7A7875] dark:text-[#A1A1AA] max-w-sm mx-auto font-sans">
                 Start a technical interview from the console to persist questions, evaluations, and reports.
               </p>
             </div>
@@ -142,22 +142,22 @@ export const UserHistoryModal: React.FC<UserHistoryModalProps> = ({
               return (
                 <div
                   key={sid}
-                  className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#F8F6F1]/90 dark:bg-[#120516] hover:border-[#3A0F34] dark:hover:border-[#EAAA00] transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs hover:shadow-sm"
+                  className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-[#F8F6F1]/90 dark:bg-[#111113] hover:border-[#3A0F34] dark:hover:border-[#F59E0B]/50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs hover:shadow-sm"
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-[#111111] dark:text-[#F8F6F1]">
+                      <span className="font-bold text-sm text-[#111111] dark:text-[#F4F4F5]">
                         {item.config.role}
                       </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516]">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#3A0F34] dark:bg-[#F59E0B] text-white dark:text-[#09090B]">
                         {item.config.difficulty}
                       </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white dark:bg-[#250C3D] text-[#555555] dark:text-slate-300 border border-[#E5DFD5] dark:border-[#3A0F34]">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white dark:bg-[#18181C] text-[#555555] dark:text-[#A1A1AA] border border-[#E5DFD5] dark:border-[#27272E]">
                         {item.config.primaryLanguage || item.config.primary_language}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[#7A7875] dark:text-slate-400">
-                      <span className="font-mono text-[11px] text-[#3A0F34] dark:text-[#EAAA00]">
+                    <div className="flex items-center gap-3 text-xs text-[#7A7875] dark:text-[#A1A1AA]">
+                      <span className="font-mono text-[11px] text-[#3A0F34] dark:text-[#F59E0B]">
                         {sid}
                       </span>
                       <span>•</span>
@@ -169,13 +169,13 @@ export const UserHistoryModal: React.FC<UserHistoryModalProps> = ({
                       <span className="flex items-center gap-1 font-medium font-mono">
                         {isCompleted ? (
                           <>
-                            <CheckCircle className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
-                            <span className="text-[#3A0F34] dark:text-[#EAAA00] uppercase text-[10px] tracking-wider">Completed</span>
+                            <CheckCircle className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#F59E0B]" />
+                            <span className="text-[#3A0F34] dark:text-[#F59E0B] uppercase text-[10px] tracking-wider">Completed</span>
                           </>
                         ) : isInProgress ? (
                           <>
-                            <PlayCircle className="h-3.5 w-3.5 text-[#EAAA00]" />
-                            <span className="text-[#EAAA00] uppercase text-[10px] tracking-wider">In Progress</span>
+                            <PlayCircle className="h-3.5 w-3.5 text-[#F59E0B] dark:text-[#F59E0B]" />
+                            <span className="text-[#F59E0B] dark:text-[#F59E0B] uppercase text-[10px] tracking-wider">In Progress</span>
                           </>
                         ) : (
                           <span className="capitalize text-[10px] tracking-wider">{item.status}</span>
@@ -191,10 +191,10 @@ export const UserHistoryModal: React.FC<UserHistoryModalProps> = ({
                         onResumeSession(sid);
                         onClose();
                       }}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] transition shadow-xs hover:shadow-sm cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider bg-[#3A0F34] dark:bg-[#F59E0B] text-white dark:text-[#09090B] hover:bg-[#2A0B26] dark:hover:bg-[#D97706] transition shadow-xs hover:shadow-sm cursor-pointer"
                     >
                       <span>{isCompleted ? 'View Report' : 'Resume Round'}</span>
-                      <ArrowRight className="h-3 w-3 text-[#EAAA00] dark:text-[#120516]" />
+                      <ArrowRight className="h-3 w-3 text-[#F59E0B] dark:text-[#09090B]" />
                     </button>
                   </div>
                 </div>

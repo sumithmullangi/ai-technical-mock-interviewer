@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Navbar, type NavTab } from './components/Navbar';
 import { LandingPage } from './components/LandingPage';
+import { Dashboard } from './components/Dashboard';
 import { InterviewConsole } from './components/InterviewConsole';
 import { FeatureGrid } from './components/FeatureGrid';
 import { ChallengesView } from './components/ChallengesView';
@@ -35,16 +36,40 @@ function AppContent() {
   // User Interview History Modal state
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // Theme state: default to light (Warm Ivory / Deep Aubergine / Marigold editorial)
+  // Theme state: support light & dark themes (default to Obsidian + Amber dark)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
+    try {
       const saved = localStorage.getItem('theme');
-      if (saved === 'dark' || saved === 'light') return saved;
-    }
-    return 'light';
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch {}
+    return 'dark';
   });
 
-  // Synchronize dark class on <html> and localStorage
+  const SAMPLE_COMPLETED_SESSION: StartedSessionData = {
+    sessionId: 'sample-report-backend-oct21',
+    session_id: 'sample-report-backend-oct21',
+    status: 'completed',
+    mode: 'text',
+    started_at: '2026-10-21T10:00:00Z',
+    config: {
+      role: 'Software Engineer - Backend',
+      difficulty: 'Mid-Level',
+      primaryLanguage: 'Python',
+      questionCount: 8,
+      mode: 'text',
+    },
+    currentQuestion: {
+      question_id: 'q8',
+      questionId: 'q8',
+      title: 'Distributed Systems & Hash Maps',
+      prompt:
+        'Can you explain how a hash map works internally and what makes it efficient? Also, what are some real-world use cases?',
+      category: 'Data Structures',
+      difficulty: 'Mid-Level',
+    },
+  };
+
+  // Synchronize light/dark class on <html> and localStorage
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -119,6 +144,8 @@ function AppContent() {
 
       if (path === '/practice' || path === '/studio' || path === '/setup') {
         setActiveTab('console');
+      } else if (path === '/dashboard' || path === '/my-interviews') {
+        setActiveTab('dashboard');
       } else if (path === '/challenges') {
         setActiveTab('challenges');
       } else if (path === '/workflow') {
@@ -192,21 +219,52 @@ function AppContent() {
         const data = await res.json();
         const sid = data.sessionId || data.session_id || sessionId;
         const status = data.status;
+
+        if (status === 'completed') {
+          setStartedSession({
+            status: 'completed',
+            session_id: sid,
+            sessionId: sid,
+            message: 'Viewing completed session evaluation report.',
+            started_at: data.createdAt || data.created_at || new Date().toISOString(),
+            config: data.config,
+          });
+          return;
+        }
+
+        // Fetch current active primary question from backend
+        let questionData = data.currentQuestion || data.current_question;
+        if (!questionData) {
+          const qRes = await apiFetch(`${apiBase}/api/v1/interviews/${sid}/question`);
+          if (qRes.ok) {
+            questionData = await qRes.json();
+          } else {
+            // Fallback to /questions list
+            const qsRes = await apiFetch(`${apiBase}/api/v1/interviews/${sid}/questions`);
+            if (qsRes.ok) {
+              const qList = await qsRes.json();
+              if (Array.isArray(qList) && qList.length > 0) {
+                questionData = qList[qList.length - 1];
+              }
+            }
+          }
+        }
+
         setStartedSession({
           status: status,
           session_id: sid,
           sessionId: sid,
-          current_question: {
-            question_number: 1,
-            topic: 'Technical Interview',
-            difficulty: data.config.difficulty,
-            question_text: 'Technical interview session.',
-            expected_concepts: [],
-          },
+          current_question: questionData,
+          currentQuestion: questionData,
           message: data.message || 'Session loaded.',
           started_at: data.createdAt || data.created_at || new Date().toISOString(),
           config: data.config,
         });
+
+        // Ensure URL contains sessionId for refresh durability
+        if (!window.location.search.includes(sid)) {
+          window.history.replaceState(null, '', `?sessionId=${encodeURIComponent(sid)}`);
+        }
       }
     } catch (err) {
       console.error('Failed to load session:', err);
@@ -233,6 +291,7 @@ function AppContent() {
     setActiveTab(tab);
     const pathMap: Record<NavTab, string> = {
       landing: '/',
+      dashboard: '/dashboard',
       console: '/practice',
       challenges: '/challenges',
       workflow: '/workflow',
@@ -249,7 +308,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F6F1] text-[#111111] dark:bg-[#120516] dark:text-[#F8F6F1] flex flex-col font-sans antialiased transition-colors duration-150">
+    <div className="min-h-screen bg-[#F8F6F1] dark:bg-[#09090B] text-[#111111] dark:text-[#F4F4F5] flex flex-col font-sans antialiased transition-colors duration-150">
       {/* Full-viewport Editorial Animated Opening Title */}
       {showIntro && (
         <AnimatedTitleIntro
@@ -259,74 +318,79 @@ function AppContent() {
 
       {/* Expired Session Alert Banner */}
       {sessionExpiredNotice && (
-        <div className="bg-[#FAF8F5] dark:bg-[#1A0826] border-b border-[#EAAA00] text-[#111111] dark:text-[#F8F6F1] px-4 py-2.5 text-xs font-semibold flex items-center justify-between">
+        <div className="bg-white dark:bg-[#18181C] border-b border-[#F59E0B] text-[#111111] dark:text-[#F4F4F5] px-4 py-2.5 text-xs font-semibold flex items-center justify-between">
           <div className="flex items-center gap-2 mx-auto">
-            <AlertTriangle className="h-4 w-4 text-[#EAAA00]" />
+            <AlertTriangle className="h-4 w-4 text-[#F59E0B]" />
             <span>Your authentication session has expired. Please sign in again to continue.</span>
           </div>
           <button
             onClick={() => setSessionExpiredNotice(false)}
-            className="text-xs text-[#3A0F34] dark:text-[#EAAA00] hover:underline p-1 font-semibold"
+            className="text-xs text-[#F59E0B] hover:underline p-1 font-semibold"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* Top Navbar with App-First Tabs */}
-      <Navbar
-        health={health}
-        activeTab={activeTab}
-        onSelectTab={handleSelectTab}
-        onOpenSetup={() => handleSelectTab('console')}
-        onRefreshHealth={checkHealth}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onOpenAuth={(mode) => openAuth(mode)}
-        onOpenHistory={openHistory}
-      />
+      {/* Top Navbar with App-First Tabs (only shown on landing page & secondary reference pages) */}
+      {!startedSession && (activeTab === 'landing' || ['workflow', 'rubric', 'architecture', 'challenges'].includes(activeTab)) && (
+        <Navbar
+          health={health}
+          activeTab={activeTab}
+          onSelectTab={handleSelectTab}
+          onOpenSetup={() => handleSelectTab('console')}
+          onRefreshHealth={checkHealth}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenAuth={(mode) => openAuth(mode)}
+          onOpenHistory={openHistory}
+        />
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1">
         {startedSession ? (
-          <div className="bg-[#F8F6F1] dark:bg-[#120516] min-h-screen text-[#111111] dark:text-[#F8F6F1]">
+          <div className="bg-[#F8F6F1] dark:bg-[#09090B] min-h-screen text-[#111111] dark:text-[#F4F4F5]">
             <ActiveInterviewView
               session={startedSession}
               onEndSession={() => {
                 setStartedSession(null);
-                window.history.replaceState({}, '', window.location.pathname);
+                window.history.replaceState({}, '', '/practice');
               }}
+              onNavigateTab={handleSelectTab}
+              theme={theme}
+              onToggleTheme={toggleTheme}
             />
           </div>
         ) : (
           <>
             {/* Active Configuration Banner Ribbon if pre-configured */}
             {activeSession && (
-              <div className="bg-[#FAF8F5] dark:bg-[#1A0826] border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 text-xs transition-colors">
-                <div className="editorial-frame px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 border-l border-r border-[#E5DFD5] dark:border-[#3A0F34]/30 font-mono">
-                  <div className="flex flex-wrap items-center gap-2 text-[#111111] dark:text-[#F8F6F1]">
-                    <span className="flex h-2 w-2 rounded-full bg-[#EAAA00] animate-pulse"></span>
+              <div className="bg-[#FAF8F5] dark:bg-[#141417] border-b border-[#E5DFD5] dark:border-[#232328] text-xs transition-colors">
+                <div className="editorial-frame px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 border-l border-r border-[#E5DFD5] dark:border-[#232328] font-mono">
+                  <div className="flex flex-wrap items-center gap-2 text-[#111111] dark:text-[#F4F4F5]">
+                    <span className="flex h-2 w-2 rounded-full bg-[#F59E0B] animate-pulse"></span>
                     <span className="font-bold uppercase tracking-wider text-[11px]">Active Session Registered:</span>
                     <span className="text-[#555555] dark:text-slate-300 font-sans text-xs">
                       {activeSession.config.role} ({activeSession.config.difficulty}) • {activeSession.config.primaryLanguage} • {activeSession.config.questionCount} Challenges
                     </span>
-                    <span className="font-mono text-[10px] bg-white dark:bg-[#250C3D] px-2.5 py-0.5 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#F8F6F1] font-semibold shadow-2xs">
+                    <span className="font-mono text-[10px] bg-white dark:bg-[#18181C] px-2.5 py-0.5 rounded-full border border-[#E5DFD5] dark:border-[#27272E] text-[#3A0F34] dark:text-[#F4F4F5] font-semibold shadow-2xs">
                       {activeSession.sessionId || activeSession.session_id}
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-wider">
                     <button
                       onClick={() => setIsSetupOpen(true)}
-                      className="font-semibold text-[#3A0F34] dark:text-[#EAAA00] hover:underline transition-colors cursor-pointer"
+                      className="font-semibold text-[#3A0F34] dark:text-[#F59E0B] hover:underline transition-colors cursor-pointer"
                     >
                       Parameters
                     </button>
                     <button
                       onClick={() => setIsSetupOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-[#3A0F34] bg-[#3A0F34] hover:bg-[#4E1446] dark:bg-[#EAAA00] dark:hover:bg-[#d89c00] dark:text-[#120516] dark:border-[#EAAA00] px-3.5 py-1.5 font-bold text-white shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-[#3A0F34] bg-[#3A0F34] hover:bg-[#4E1446] dark:bg-[#F59E0B] dark:hover:bg-[#d89c00] dark:text-[#09090B] dark:border-[#F59E0B] px-3.5 py-1.5 font-bold text-white shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
                     >
                       <span>Resume Modal</span>
-                      <ArrowRight className="h-3 w-3 text-[#EAAA00] dark:text-[#120516]" />
+                      <ArrowRight className="h-3 w-3 text-[#F59E0B] dark:text-[#09090B]" />
                     </button>
                   </div>
                 </div>
@@ -341,6 +405,15 @@ function AppContent() {
                 onExploreChallenges={() => handleSelectTab('challenges')}
                 onEnterStudio={() => handleSelectTab('console')}
               />
+            ) : activeTab === 'dashboard' ? (
+              <Dashboard
+                onNewInterview={() => handleSelectTab('console')}
+                onResumeSession={handleResumeSession}
+                onNavigateTab={handleSelectTab}
+                onOpenAuth={openAuth}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+              />
             ) : activeTab === 'console' ? (
               <InterviewConsole
                 onStartSession={(startedData) => setStartedSession(startedData)}
@@ -348,7 +421,19 @@ function AppContent() {
                 onOpenSetupModal={() => handleSelectTab('console')}
                 onNavigateTab={handleSelectTab}
                 healthOk={health.status === 'ok'}
+                theme={theme}
+                onToggleTheme={toggleTheme}
               />
+            ) : activeTab === 'sample-report' ? (
+              <div className="bg-[#F8F6F1] dark:bg-[#09090B] min-h-screen text-[#111111] dark:text-[#F4F4F5]">
+                <ActiveInterviewView
+                  session={SAMPLE_COMPLETED_SESSION}
+                  onEndSession={() => handleSelectTab('dashboard')}
+                  onNavigateTab={handleSelectTab}
+                  theme={theme}
+                  onToggleTheme={toggleTheme}
+                />
+              </div>
             ) : activeTab === 'challenges' ? (
               <ChallengesView
                 onStartSession={(startedData) => setStartedSession(startedData)}
@@ -356,7 +441,7 @@ function AppContent() {
                 onSwitchToStudio={() => handleSelectTab('console')}
               />
             ) : (
-              /* Secondary Reference / Documentation Views (Workflow, Rubric, Sample Report, Architecture) */
+              /* Secondary Reference / Documentation Views (Workflow, Rubric, Architecture) */
               <FeatureGrid
                 activeSection={activeTab}
                 onSelectSection={handleSelectTab}
@@ -367,8 +452,8 @@ function AppContent() {
         )}
       </main>
 
-      {/* Global Footer: Rendered on interior content views; LandingPage has its own single-screen bottom datum strip */}
-      {!startedSession && activeTab !== 'landing' && (
+      {/* Global Footer: Rendered on interior secondary documentation views */}
+      {!startedSession && ['workflow', 'rubric', 'architecture', 'challenges'].includes(activeTab) && (
         <Footer
           onOpenSetup={() => handleSelectTab('console')}
           onReplayIntro={() => setShowIntro(true)}

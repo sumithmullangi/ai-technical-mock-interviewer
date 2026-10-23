@@ -10,23 +10,25 @@
     <link rel="preload" href="/fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Playfair+Display:ital,wght@0,500..800;1,500..800&family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
       (function() {
         try {
-          const theme = localStorage.getItem('theme');
-          if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-            document.documentElement.style.colorScheme = 'dark';
-          } else {
+          const theme = localStorage.getItem('theme') || 'dark';
+          if (theme === 'light') {
             document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
             document.documentElement.style.colorScheme = 'light';
+          } else {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+            document.documentElement.style.colorScheme = 'dark';
           }
         } catch (_) {}
       })();
     </script>
   </head>
-  <body class="bg-[#F8F6F1] text-[#111111] dark:bg-[#120516] dark:text-[#F8F6F1] antialiased selection:bg-[#EAAA00]/25 selection:text-[#111111] dark:selection:bg-[#EAAA00]/30 dark:selection:text-[#F8F6F1] transition-colors duration-150">
+  <body class="bg-[#F8F6F1] dark:bg-[#09090B] text-[#111111] dark:text-[#F4F4F5] antialiased selection:bg-[#F59E0B]/30 selection:text-white transition-colors duration-150">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

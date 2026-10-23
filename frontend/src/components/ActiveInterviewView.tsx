@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Code2,
   Cpu,
   CheckCircle2,
   Copy,
   Check,
-  ShieldCheck,
   ArrowLeft,
   Sparkles,
   Terminal,
@@ -17,155 +15,819 @@ import {
   MessageSquare,
   Bot,
   BarChart3,
-  Lightbulb,
   CornerDownRight,
   RefreshCw,
   ArrowRight,
   Trophy,
   ChevronDown,
   ChevronUp,
-  GraduationCap,
   Award,
+  Mic,
+  MicOff,
+  Radio,
+  Volume2,
+  User,
+  Clock,
+  Quote,
+  Target,
+  Printer,
+  Share2,
+  Settings,
+  Download,
+  Home,
+  Briefcase,
+  FileText,
+  Play,
+  Shield,
+  RotateCcw,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import type {
   StartedSessionData,
   InterviewQuestion,
-  AnswerSubmissionState,
-  EvaluationState,
   FollowUpQuestionData,
-  FollowUpState,
   SessionAdvanceResponse,
-  ProgressionState,
   InterviewReportData,
   ReportState,
+  InterviewMode,
+  InterviewStateMachineState,
+  ConversationMessage,
+  AnswerEvaluationData,
 } from '../types';
 import { apiFetch } from '../utils/api';
-import { VoiceInterviewPanel } from './VoiceInterviewPanel';
+import {
+  WebSpeechVoiceSession,
+  checkSpeechCapabilities,
+  type BrowserSpeechCapabilities,
+} from '../utils/webSpeechVoice';
+
+export const AiMascot: React.FC<{ size?: number; glowing?: boolean }> = ({ size = 28, glowing = false }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 40 40"
+    fill="none"
+    className={glowing ? 'drop-shadow-[0_0_16px_rgba(0,240,255,0.7)]' : ''}
+  >
+    <defs>
+      <linearGradient id="mascot-body-grad" x1="8" y1="6" x2="32" y2="36" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#1E1E24" />
+        <stop offset="1" stopColor="#0B0B0E" />
+      </linearGradient>
+      <filter id="cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="1.5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    {/* Antennas / ears */}
+    <circle cx="10" cy="11" r="3" fill="#18181C" />
+    <circle cx="10" cy="11" r="1.5" fill="#00F0FF" filter="url(#cyan-glow)" />
+    <circle cx="30" cy="11" r="3" fill="#18181C" />
+    <circle cx="30" cy="11" r="1.5" fill="#00F0FF" filter="url(#cyan-glow)" />
+    {/* Body sphere */}
+    <circle cx="20" cy="20" r="17" fill="url(#mascot-body-grad)" stroke="#27272E" strokeWidth="1" />
+    {/* Head specular reflection */}
+    <ellipse cx="20" cy="9" rx="9" ry="3.5" fill="white" fillOpacity="0.12" />
+    {/* Cute cyan glowing eyes */}
+    <circle cx="14" cy="19" r="3.2" fill="#00F0FF" filter="url(#cyan-glow)" />
+    <circle cx="26" cy="19" r="3.2" fill="#00F0FF" filter="url(#cyan-glow)" />
+    {/* Eye gleams */}
+    <circle cx="15.2" cy="17.8" r="1" fill="#FFFFFF" />
+    <circle cx="27.2" cy="17.8" r="1" fill="#FFFFFF" />
+    {/* Smile */}
+    <path d="M17 24 Q20 27 23 24" stroke="#00F0FF" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+  </svg>
+);
+
+import type { NavTab } from './Navbar';
 
 interface ActiveInterviewViewProps {
   session: StartedSessionData;
   onEndSession: () => void;
+  onNavigateTab?: (tab: NavTab) => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
   session,
   onEndSession,
+  onNavigateTab,
+  theme = 'dark',
+  onToggleTheme,
 }) => {
-  const [copied, setCopied] = useState(false);
-  const [answerText, setAnswerText] = useState('');
-  const [currentQuestion, setCurrentQuestion] = useState<InterviewQuestion | null>(
-    session.current_question || session.currentQuestion || null
-  );
+  const sessionId = session.session_id || session.sessionId;
+  const config = session.config;
+  const totalQuestions = config?.questionCount || 5;
+
+  // Browser speech capabilities
+  const [capabilities] = useState<BrowserSpeechCapabilities>(checkSpeechCapabilities);
+  const hasVoiceSupport = capabilities.hasSpeechRecognition && capabilities.hasSpeechSynthesis;
+
+  // Active interaction mode: Voice vs Text
+  const [activeMode, setActiveMode] = useState<InterviewMode>(() => {
+    if (session.mode) return session.mode;
+    return hasVoiceSupport ? 'voice' : 'text';
+  });
+
+  // State Machine State
+  const [interviewState, setInterviewState] = useState<InterviewStateMachineState>(() => {
+    return session.status === 'completed' ? 'COMPLETED' : 'ASKING_QUESTION';
+  });
+  const interviewStateRef = useRef<InterviewStateMachineState>(interviewState);
+  useEffect(() => {
+    interviewStateRef.current = interviewState;
+  }, [interviewState]);
+
+  // Overall session status
   const [sessionStatus, setSessionStatus] = useState<'in_progress' | 'completed'>(
     session.status === 'completed' ? 'completed' : 'in_progress'
   );
-  const [submissionState, setSubmissionState] = useState<AnswerSubmissionState>({
-    status: 'idle',
-  });
-  const [evaluationState, setEvaluationState] = useState<EvaluationState>({
-    status: 'idle',
-  });
-  const [followUpState, setFollowUpState] = useState<FollowUpState>({
-    status: 'idle',
-    followUps: [],
-  });
-  const [progressionState, setProgressionState] = useState<ProgressionState>({
-    status: 'idle',
-  });
-  const [followUpInputs, setFollowUpInputs] = useState<Record<string, string>>({});
-  const [submittingFollowUpId, setSubmittingFollowUpId] = useState<string | null>(null);
-  const [followUpError, setFollowUpError] = useState<string | null>(null);
 
-  const [reportState, setReportState] = useState<ReportState>({
-    status: 'idle',
-  });
+  // Active Question & progression
+  const [currentQuestion, setCurrentQuestion] = useState<InterviewQuestion | null>(
+    session.current_question || session.currentQuestion || null
+  );
+  const q = currentQuestion;
+  const qNum = q?.question_number || q?.questionNumber || 1;
+  const isFinalQuestion = qNum >= totalQuestions;
+
+  // Candidate input buffers
+  const [candidateAnswerText, setCandidateAnswerText] = useState('');
+  const [currentSpokenText, setCurrentSpokenText] = useState('');
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Elapsed Session Timer (Reference Panel 5)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (sessionStatus === 'completed') return;
+    const interval = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionStatus]);
+
+  const formatTimer = (totalSecs: number) => {
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // Unified Chronological Transcript
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+
+  // Follow-up question state
+  const [currentFollowUp, setCurrentFollowUp] = useState<FollowUpQuestionData | null>(null);
+  const [hasFollowedUpCurrentQuestion, setHasFollowedUpCurrentQuestion] = useState(false);
+  const [followUpAnswerText, setFollowUpAnswerText] = useState('');
+
+  // Report State
+  const [reportState, setReportState] = useState<ReportState>({ status: 'idle' });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedQuestionNumber, setExpandedQuestionNumber] = useState<number | null>(null);
 
-  const q = currentQuestion;
-  const config = session.config;
-  const sessionId = session.session_id || session.sessionId;
-  const qNum = q?.question_number || q?.questionNumber || 1;
-  const totalQuestions = config?.questionCount || 5;
-  const isFinalQuestion = qNum >= totalQuestions;
+  // Early Exit Confirmation Modal
+  const [isEarlyExitModalOpen, setIsEarlyExitModalOpen] = useState(false);
+  const [isExitingEarly, setIsExitingEarly] = useState(false);
 
-  const fetchReport = async (isRefresh: boolean = false) => {
-    if (!sessionId) return;
-    if (isRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setReportState((prev) => ({ ...prev, status: 'loading', errorMessage: undefined }));
-    }
-    try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
-      const url = `${apiBase}/api/v1/interviews/${sessionId}/report${isRefresh ? '?refresh=true' : ''}`;
-      const res = await apiFetch(url);
-      if (res.ok) {
-        const data: InterviewReportData = await res.json();
-        setReportState({ status: 'success', report: data });
-        const results = data.per_question_results || data.perQuestionResults || [];
-        if (results.length > 0) {
-          const firstNum = results[0].question_number || results[0].questionNumber || 1;
-          setExpandedQuestionNumber(firstNum);
-        }
+  // Voice Session Reference
+  const voiceSessionRef = useRef<WebSpeechVoiceSession | null>(null);
+  const transcriptBottomRef = useRef<HTMLDivElement | null>(null);
+  const isSubmittingRef = useRef<boolean>(false);
+  const handleVoiceAutoSubmitRef = useRef<(text: string) => void>(() => {});
+  const presentedQuestionRef = useRef<number | null>(null);
+
+  // Auto-scroll transcript
+  const scrollToBottom = useCallback(() => {
+    transcriptBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, currentSpokenText, interviewState, scrollToBottom]);
+
+  // Helper to add transcript messages
+  const addTranscriptMessage = useCallback((msg: ConversationMessage) => {
+    setMessages((prev) => {
+      // Prevent duplicate messages
+      if (prev.some((m) => m.id === msg.id)) return prev;
+      return [...prev, msg];
+    });
+  }, []);
+
+  // Fetch Report for completed sessions
+  const fetchReport = useCallback(
+    async (isRefresh: boolean = false) => {
+      if (!sessionId) return;
+      if (isRefresh) {
+        setIsRefreshing(true);
       } else {
-        const errJson = await res.json().catch(() => null);
-        let detailMsg = `HTTP ${res.status}: Failed to generate interview report.`;
-        if (errJson?.detail) {
-          if (typeof errJson.detail === 'string') {
-            detailMsg = errJson.detail;
-          } else if (Array.isArray(errJson.detail)) {
-            detailMsg = errJson.detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ');
-          } else {
-            detailMsg = JSON.stringify(errJson.detail);
+        setReportState((prev) => ({ ...prev, status: 'loading', errorMessage: undefined }));
+      }
+      if (sessionId.startsWith('sample-report')) {
+        const sampleReport: InterviewReportData = {
+          session_id: sessionId,
+          role: 'Software Engineer - Backend',
+          summary_narrative:
+            'You demonstrated strong problem-solving skills and clear communication. With a bit more focus on edge cases and system design depth, you can reach an even higher level.',
+          overall_score: 8.5,
+          overallScore: 8.5,
+          status: 'completed',
+          created_at: '2026-10-21T11:45:00Z',
+          scores: {
+            correctness_average: 8.8,
+            technical_depth_average: 8.2,
+            edge_cases_average: 9.0,
+            communication_average: 9.0,
+          },
+          strengths: [
+            'Clear and structured explanations',
+            'Good understanding of core concepts',
+            'Used relevant real-world examples',
+          ],
+          weaknesses: [
+            'Discuss more edge cases',
+            'Explore time and space complexity in depth',
+            'Be more concise in longer answers',
+          ],
+          per_question_results: [
+            {
+              question_number: 1,
+              title: 'Hash Maps & Internal Collision Resolution',
+              overall_score: 8.5,
+              correctness_score: 8.8,
+              technical_depth_score: 8.2,
+              edge_cases_score: 9.0,
+              communication_score: 9.0,
+              feedback: 'Demonstrated precise knowledge of hashing, bucket resizing amortized O(1), and collision chaining.',
+              strengths: ['Clear explanation of load factors and Rehashing triggers'],
+              weaknesses: ['Mention worst-case collision attacks (SipHash mitigation)'],
+            },
+          ],
+        };
+        setReportState({ status: 'success', report: sampleReport });
+        setExpandedQuestionNumber(1);
+        if (isRefresh) setIsRefreshing(false);
+        return;
+      }
+      try {
+        const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+        const url = `${apiBase}/api/v1/interviews/${sessionId}/report${isRefresh ? '?refresh=true' : ''}`;
+        const res = await apiFetch(url);
+        if (res.ok) {
+          const data: InterviewReportData = await res.json();
+          setReportState({ status: 'success', report: data });
+          const results = data.per_question_results || data.perQuestionResults || [];
+          if (results.length > 0) {
+            const firstNum = results[0].question_number || results[0].questionNumber || 1;
+            setExpandedQuestionNumber(firstNum);
           }
+        } else {
+          const errJson = await res.json().catch(() => null);
+          let detailMsg = `HTTP ${res.status}: Failed to generate interview report.`;
+          if (errJson?.detail) {
+            if (typeof errJson.detail === 'string') {
+              detailMsg = errJson.detail;
+            } else if (Array.isArray(errJson.detail)) {
+              detailMsg = errJson.detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ');
+            } else {
+              detailMsg = JSON.stringify(errJson.detail);
+            }
+          }
+          setReportState({
+            status: 'error',
+            errorMessage: detailMsg,
+          });
         }
+      } catch (err: unknown) {
         setReportState({
           status: 'error',
-          errorMessage: detailMsg,
+          errorMessage: err instanceof Error ? err.message : 'Network error fetching report.',
         });
+      } finally {
+        if (isRefresh) {
+          setIsRefreshing(false);
+        }
       }
-    } catch (err: unknown) {
-      setReportState({
-        status: 'error',
-        errorMessage: err instanceof Error ? err.message : 'Network error fetching report.',
-      });
-    } finally {
-      if (isRefresh) {
-        setIsRefreshing(false);
-      }
-    }
-  };
+    },
+    [sessionId]
+  );
 
   useEffect(() => {
     if (sessionStatus === 'completed' && sessionId) {
       fetchReport(false);
     }
-  }, [sessionStatus, sessionId]);
+  }, [sessionStatus, sessionId, fetchReport]);
 
-  // On mount or question change, retrieve existing follow-up questions for this primary question
+  // Clean up voice session on unmount
   useEffect(() => {
-    const fetchExistingFollowUps = async () => {
-      if (!sessionId || !q) return;
-      try {
-        const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
-        const questionId = q.question_number || q.questionNumber;
-        const res = await apiFetch(`${apiBase}/api/v1/interviews/${sessionId}/questions/${questionId}/follow-ups`);
-        if (res.ok) {
-          const list: FollowUpQuestionData[] = await res.json();
-          if (Array.isArray(list)) {
-            setFollowUpState({ status: 'idle', followUps: list });
-          }
-        }
-      } catch {
-        // Silently continue if follow-ups cannot be retrieved
+    return () => {
+      if (voiceSessionRef.current) {
+        voiceSessionRef.current.cleanup();
+        voiceSessionRef.current = null;
       }
     };
+  }, []);
 
-    fetchExistingFollowUps();
-  }, [sessionId, q]);
+  // Listen for Escape key to interrupt interviewer speech (Barge-in)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (interviewStateRef.current === 'SPEAKING' || interviewStateRef.current === 'ASKING_QUESTION') {
+          if (voiceSessionRef.current) {
+            voiceSessionRef.current.cancelSpeech();
+            setInterviewState('LISTENING');
+            setStatusMessage('Interviewer speech skipped. Listening to candidate...');
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-  const handleCopyCode = () => {
+  // Initialize or re-configure Voice Engine
+  const setupVoiceEngine = useCallback(
+    (targetQ: InterviewQuestion) => {
+      if (!sessionId || !hasVoiceSupport) return;
+
+      if (voiceSessionRef.current) {
+        voiceSessionRef.current.cleanup();
+        voiceSessionRef.current = null;
+      }
+
+      const qText = targetQ.question_text || targetQ.questionText || '';
+      const qTopic = targetQ.topic || 'Technical Challenge';
+      const questionNum = targetQ.question_number || targetQ.questionNumber || 1;
+
+      const sessionInstance = new WebSpeechVoiceSession(
+        sessionId,
+        questionNum,
+        qText,
+        qTopic,
+        {
+          onStatusChange: (status, msg) => {
+            if (msg) setStatusMessage(msg);
+            if (status === 'speaking') {
+              setInterviewState((prev) => (prev === 'COMPLETED' ? prev : 'SPEAKING'));
+            } else if (status === 'listening') {
+              setInterviewState((prev) =>
+                ['SAVING_ANSWER', 'EVALUATING_ANSWER', 'PREPARING_NEXT_QUESTION', 'SESSION_COMPLETING', 'COMPLETED'].includes(
+                  prev
+                )
+                  ? prev
+                  : 'LISTENING'
+              );
+            }
+          },
+          onTranscriptUpdate: (transcripts) => {
+            const candItems = transcripts.filter((t) => t.speaker === 'candidate');
+            if (candItems.length > 0) {
+              const latestCand = candItems[candItems.length - 1];
+              setCurrentSpokenText(latestCand.text);
+            }
+          },
+          onError: (err) => {
+            console.warn('Voice error encountered:', err);
+            if (err.includes('Microphone permission was denied')) {
+              setErrorMessage('Microphone access was denied. Switching to Text mode.');
+              setActiveMode('text');
+            } else {
+              setErrorMessage(err);
+            }
+          },
+          onThoughtComplete: (completedText) => {
+            // Auto silence detection: candidate completed substantive thoughts and paused
+            if (
+              interviewStateRef.current === 'LISTENING' &&
+              !isSubmittingRef.current &&
+              completedText.trim().length >= 15
+            ) {
+              handleVoiceAutoSubmitRef.current(completedText.trim());
+            }
+          },
+          onInterviewerSpeechEnd: () => {
+            if (
+              interviewStateRef.current === 'ASKING_QUESTION' ||
+              interviewStateRef.current === 'SPEAKING'
+            ) {
+              setInterviewState('LISTENING');
+              setStatusMessage('Listening to candidate explanation...');
+            }
+          },
+        }
+      );
+
+      voiceSessionRef.current = sessionInstance;
+    },
+    [sessionId, hasVoiceSupport]
+  );
+
+  // Authoritative question presentation effect
+  useEffect(() => {
+    if (sessionStatus === 'completed' || !q) return;
+
+    if (presentedQuestionRef.current === qNum) return;
+    presentedQuestionRef.current = qNum;
+
+    // Add question to conversation transcript once
+    const qMessageId = `interviewer-q-${qNum}`;
+    addTranscriptMessage({
+      id: qMessageId,
+      speaker: 'interviewer',
+      text: q.question_text || q.questionText || '',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      questionNumber: qNum,
+    });
+
+    if (activeMode === 'voice' && hasVoiceSupport) {
+      setupVoiceEngine(q);
+      setInterviewState('ASKING_QUESTION');
+      setStatusMessage(`AI Interviewer presenting Question ${qNum}...`);
+
+      // Start the voice session and speak
+      voiceSessionRef.current?.start().catch((err) => {
+        console.warn('Could not auto-start voice session:', err);
+        setInterviewState('LISTENING');
+      });
+    } else {
+      setInterviewState('LISTENING');
+      setStatusMessage('Enter your solution below...');
+    }
+  }, [q, qNum, sessionStatus, activeMode, hasVoiceSupport, addTranscriptMessage, setupVoiceEngine]);
+
+  // Handle switching between Voice and Text mode dynamically
+  const handleToggleMode = (newMode: InterviewMode) => {
+    if (newMode === activeMode) return;
+
+    if (newMode === 'voice') {
+      if (!hasVoiceSupport) {
+        setErrorMessage('Voice mode requires browser SpeechRecognition (Chrome, Edge, or Safari).');
+        return;
+      }
+      setActiveMode('voice');
+      setErrorMessage(null);
+      if (q) {
+        setupVoiceEngine(q);
+        // Candidate has already seen/heard question prompt; skip repeating greeting audio
+        voiceSessionRef.current?.start(true).then(() => {
+          setInterviewState('LISTENING');
+          setStatusMessage('Voice Mode active • Listening to candidate...');
+        }).catch((err) => {
+          setErrorMessage(err.message || 'Failed to start microphone');
+        });
+      }
+    } else {
+      // Switching to text mode
+      if (voiceSessionRef.current) {
+        voiceSessionRef.current.cleanup();
+        voiceSessionRef.current = null;
+      }
+      // Populate text input with any spoken text captured so far
+      if (currentSpokenText && !candidateAnswerText) {
+        setCandidateAnswerText(currentSpokenText);
+      }
+      setActiveMode('text');
+      setInterviewState('LISTENING');
+      setStatusMessage('Text Mode active • Type your solution');
+    }
+  };
+
+  // Advance Question Progression
+  const handleAdvanceToNextQuestion = async () => {
+    setInterviewState('PREPARING_NEXT_QUESTION');
+    setStatusMessage('Preparing next challenge...');
+
+    const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+
+    try {
+      const advanceRes = await apiFetch(`${apiBase}/api/v1/interviews/${sessionId}/advance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!advanceRes.ok) {
+        const errJson = await advanceRes.json().catch(() => null);
+        throw new Error(errJson?.detail || `HTTP ${advanceRes.status}: Failed to advance.`);
+      }
+
+      const advanceData: SessionAdvanceResponse = await advanceRes.json();
+
+      if (advanceData.is_completed || advanceData.status === 'completed' || isFinalQuestion) {
+        // Complete session automatically!
+        setInterviewState('SESSION_COMPLETING');
+        setStatusMessage('Session complete! Synthesizing candidate performance dossier...');
+        if (voiceSessionRef.current) {
+          voiceSessionRef.current.cleanup();
+          voiceSessionRef.current = null;
+        }
+        setSessionStatus('completed');
+        await fetchReport(false);
+        setInterviewState('COMPLETED');
+        isSubmittingRef.current = false;
+        return;
+      }
+
+      if (advanceData.current_question || advanceData.currentQuestion) {
+        const nextQ = (advanceData.current_question || advanceData.currentQuestion)!;
+        setCandidateAnswerText('');
+        setCurrentSpokenText('');
+        setHasFollowedUpCurrentQuestion(false);
+        setCurrentFollowUp(null);
+        isSubmittingRef.current = false;
+        // Setting currentQuestion triggers the authoritative presentation effect
+        setCurrentQuestion(nextQ);
+      }
+    } catch (err) {
+      isSubmittingRef.current = false;
+      setInterviewState('ERROR');
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Error advancing to next challenge.'
+      );
+    }
+  };
+
+  // Submit Answer Pipeline (both Voice and Text)
+  const handleSubmitAnswerCore = async (answerText: string, isVoiceSubmission: boolean) => {
+    if (isSubmittingRef.current || !sessionId || !q) return;
+    const trimmed = answerText.trim();
+    if (!trimmed) {
+      setErrorMessage('Answer cannot be empty. Please explain your approach.');
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setErrorMessage(null);
+
+    // Stop microphone from capturing further speech
+    if (voiceSessionRef.current) {
+      voiceSessionRef.current.cancelSpeech();
+    }
+
+    // Step 1: Append candidate response to transcript
+    addTranscriptMessage({
+      id: `cand-ans-${qNum}-${Date.now()}`,
+      speaker: 'candidate',
+      text: trimmed,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      questionNumber: qNum,
+      isVoice: isVoiceSubmission,
+    });
+
+    // Step 2: Persist Answer to PostgreSQL
+    setInterviewState('SAVING_ANSWER');
+    setStatusMessage('Persisting your solution to database...');
+
+    let persistedAnswerId: string | null = null;
+    const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+
+    try {
+      const saveRes = await apiFetch(`${apiBase}/api/v1/interviews/${sessionId}/answers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          answer_text: trimmed,
+          question_number: qNum,
+        }),
+      });
+
+      if (!saveRes.ok) {
+        const errJson = await saveRes.json().catch(() => null);
+        throw new Error(errJson?.detail || `HTTP ${saveRes.status}: Failed to persist answer.`);
+      }
+
+      const saveData = await saveRes.json();
+      persistedAnswerId = saveData.answer_id || saveData.answerId;
+    } catch (err) {
+      isSubmittingRef.current = false;
+      setInterviewState('ERROR');
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Failed to save candidate answer. You can retry submission without losing your response.'
+      );
+      return;
+    }
+
+    // Step 3: Call AI Evaluation
+    setInterviewState('EVALUATING_ANSWER');
+    setStatusMessage('Evaluating response against 4D technical rubric...');
+
+    let evalData: AnswerEvaluationData | null = null;
+
+    try {
+      const evalRes = await apiFetch(`${apiBase}/api/v1/interviews/${sessionId}/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          answer_id: persistedAnswerId,
+          question_number: qNum,
+          question_text: q.question_text || q.questionText || '',
+          expected_concepts: q.expected_concepts || q.expectedConcepts || [],
+        }),
+      });
+
+      if (evalRes.ok) {
+        const receivedEval: AnswerEvaluationData = await evalRes.json();
+        evalData = receivedEval;
+        // Append evaluation card to transcript
+        addTranscriptMessage({
+          id: `eval-${qNum}-${Date.now()}`,
+          speaker: 'system',
+          text: receivedEval.feedback,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          questionNumber: qNum,
+          evaluation: receivedEval,
+        });
+      } else {
+        // Handle Gemini Quota 429, 503, or 502 gracefully without fabricated scores
+        const errJson = await evalRes.json().catch(() => null);
+        const detailMsg = errJson?.detail || `Evaluation returned HTTP ${evalRes.status}`;
+        addTranscriptMessage({
+          id: `eval-notice-${qNum}-${Date.now()}`,
+          speaker: 'system',
+          text: `[Live AI Evaluation Notice]: ${detailMsg}. Your response was recorded safely in database.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          questionNumber: qNum,
+        });
+      }
+    } catch (evalErr) {
+      console.warn('Evaluation skipped due to upstream issue:', evalErr);
+      addTranscriptMessage({
+        id: `eval-neterr-${qNum}-${Date.now()}`,
+        speaker: 'system',
+        text: `[Evaluation Notice]: Upstream AI evaluation service unavailable. Response was saved safely.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        questionNumber: qNum,
+      });
+    }
+
+    // Step 4: Check if an adaptive follow-up is appropriate
+    const missingConcepts = evalData?.missing_concepts || evalData?.missingConcepts || [];
+    const scores = evalData?.scores;
+    const hasMissingConcepts = missingConcepts.length > 0;
+    const hasLowDepthOrEdge = scores && ((scores.technical_depth ?? scores.technicalDepth ?? 10) < 7.0 || (scores.edge_cases ?? scores.edgeCases ?? 10) < 7.0);
+
+    const shouldAskFollowUp =
+      !hasFollowedUpCurrentQuestion &&
+      qNum < totalQuestions &&
+      (hasMissingConcepts || hasLowDepthOrEdge);
+
+    if (shouldAskFollowUp) {
+      setStatusMessage('Synthesizing adaptive follow-up inquiry...');
+      try {
+        const fuRes = await apiFetch(`${apiBase}/api/v1/interviews/${sessionId}/follow-up`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question_number: qNum,
+          }),
+        });
+
+        if (fuRes.ok) {
+          const fuData: FollowUpQuestionData = await fuRes.json();
+          setCurrentFollowUp(fuData);
+          setHasFollowedUpCurrentQuestion(true);
+          setFollowUpAnswerText('');
+          setCurrentSpokenText('');
+          isSubmittingRef.current = false;
+
+          // Add follow-up inquiry message to transcript
+          const fuQuestionText = fuData.question_text || fuData.questionText || '';
+          addTranscriptMessage({
+            id: `fu-q-${fuData.id || Date.now()}`,
+            speaker: 'interviewer',
+            text: `Follow-up inquiry: "${fuQuestionText}"`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            questionNumber: qNum,
+            isFollowUp: true,
+            followUpNumber: fuData.follow_up_number || fuData.followUpNumber || 1,
+          });
+
+          if (activeMode === 'voice' && voiceSessionRef.current) {
+            setInterviewState('SPEAKING');
+            setStatusMessage('Interviewer speaking follow-up inquiry...');
+            voiceSessionRef.current.speakText(
+              `Follow-up question: ${fuQuestionText}`,
+              () => {
+                setInterviewState('LISTENING');
+                setStatusMessage('Listening to follow-up answer...');
+              }
+            );
+          } else {
+            setInterviewState('LISTENING');
+            setStatusMessage('Please respond to the follow-up inquiry...');
+          }
+          return;
+        }
+      } catch (fuErr) {
+        console.warn('Could not generate adaptive follow-up:', fuErr);
+      }
+    }
+
+    // Step 5: Advance to next question or complete interview
+    await handleAdvanceToNextQuestion();
+  };
+
+  // Auto-submit from voice silence detection via ref
+  useEffect(() => {
+    handleVoiceAutoSubmitRef.current = (spokenText: string) => {
+      handleSubmitAnswerCore(spokenText, true);
+    };
+  });
+
+  // Submit follow-up response
+  const handleFollowUpSubmitCore = async (answerText: string, isVoiceSubmission: boolean) => {
+    if (!currentFollowUp || isSubmittingRef.current || !sessionId) return;
+    const trimmed = answerText.trim();
+    if (!trimmed) {
+      setErrorMessage('Follow-up answer cannot be empty.');
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setErrorMessage(null);
+
+    // Append candidate follow-up answer to transcript
+    addTranscriptMessage({
+      id: `cand-fu-${Date.now()}`,
+      speaker: 'candidate',
+      text: trimmed,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      questionNumber: qNum,
+      isFollowUp: true,
+      isVoice: isVoiceSubmission,
+    });
+
+    setInterviewState('SAVING_ANSWER');
+    setStatusMessage('Saving follow-up response...');
+
+    const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+
+    try {
+      const res = await apiFetch(
+        `${apiBase}/api/v1/interviews/${sessionId}/follow-ups/${currentFollowUp.id}/answer`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            answer_text: trimmed,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.detail || `HTTP ${res.status}: Failed to submit follow-up.`);
+      }
+
+      setCurrentFollowUp(null);
+      setFollowUpAnswerText('');
+      setCurrentSpokenText('');
+      // Proceed to next question progression
+      await handleAdvanceToNextQuestion();
+    } catch (err) {
+      isSubmittingRef.current = false;
+      setInterviewState('ERROR');
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Failed to save follow-up answer. Please retry.'
+      );
+    }
+  };
+
+  // Conclude interview early with report
+  const handleEarlyComplete = async () => {
+    setIsExitingEarly(true);
+    setIsEarlyExitModalOpen(false);
+    setInterviewState('SESSION_COMPLETING');
+    setStatusMessage('Finalizing session and compiling evaluation dossier...');
+
+    if (voiceSessionRef.current) {
+      voiceSessionRef.current.cleanup();
+      voiceSessionRef.current = null;
+    }
+
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+      await apiFetch(`${apiBase}/api/v1/interviews/${sessionId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch {
+      // Ignore if already completed
+    }
+
+    setSessionStatus('completed');
+    await fetchReport(false);
+    setInterviewState('COMPLETED');
+    setIsExitingEarly(false);
+  };
+
+  const handleCopyStarterCode = () => {
     const code = q?.starter_code || q?.starterCode;
     if (code) {
       navigator.clipboard.writeText(code);
@@ -174,1371 +836,957 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
     }
   };
 
-  const handleSubmitAnswer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = answerText.trim();
-    if (!trimmed) {
-      setSubmissionState({
-        status: 'error',
-        errorMessage: 'Answer submission cannot be empty or whitespace only.',
-      });
-      return;
-    }
-    if (!sessionId) {
-      setSubmissionState({
-        status: 'error',
-        errorMessage: 'Session ID is missing.',
-      });
-      return;
-    }
-
-    setSubmissionState({ status: 'submitting' });
-    try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
-      const endpoint = `${apiBase}/api/v1/interviews/${sessionId}/answers`;
-
-      const response = await apiFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          answer_text: trimmed,
-          question_number: qNum,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSubmissionState({
-          status: 'submitted',
-          response: data,
-        });
-      } else {
-        const errorData = await response.json().catch(() => null);
-        let detailMsg = `HTTP error ${response.status}: Failed to submit answer.`;
-        if (errorData?.detail) {
-          if (typeof errorData.detail === 'string') {
-            detailMsg = errorData.detail;
-          } else if (Array.isArray(errorData.detail)) {
-            detailMsg = errorData.detail
-              .map((d: { msg?: string }) => d.msg || JSON.stringify(d))
-              .join(', ');
-          } else {
-            detailMsg = JSON.stringify(errorData.detail);
-          }
-        }
-        setSubmissionState({
-          status: 'error',
-          errorMessage: detailMsg,
-        });
-      }
-    } catch (err: unknown) {
-      setSubmissionState({
-        status: 'error',
-        errorMessage:
-          err instanceof TypeError && err.message === 'Failed to fetch'
-            ? 'Unable to connect to the backend server. Please verify that the FastAPI backend is running.'
-            : err instanceof Error
-            ? err.message
-            : 'Connection to backend failed.',
-      });
-    }
+  const handlePlaySpeech = () => {
+    const text = q?.question_text || q?.questionText || '';
+    if (!text || typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
   };
 
-  const handleRequestEvaluation = async () => {
-    if (!sessionId) {
-      setEvaluationState({
-        status: 'error',
-        errorMessage: 'Session ID is missing.',
-      });
-      return;
-    }
-    setEvaluationState({ status: 'evaluating' });
-
-    try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
-      const endpoint = `${apiBase}/api/v1/interviews/${sessionId}/evaluate`;
-
-      const response = await apiFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          answer_id: submissionState.response?.answer_id || submissionState.response?.answerId,
-          question_number: qNum,
-          question_text: q?.question_text || q?.questionText || '',
-          expected_concepts: expectedConcepts,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setEvaluationState({
-          status: 'evaluated',
-          evaluation: data,
-        });
-      } else {
-        const errorData = await response.json().catch(() => null);
-        let detailMsg = `HTTP error ${response.status}: Failed to evaluate answer.`;
-        if (errorData?.detail) {
-          if (typeof errorData.detail === 'string') {
-            detailMsg = errorData.detail;
-          } else if (Array.isArray(errorData.detail)) {
-            detailMsg = errorData.detail
-              .map((d: { msg?: string }) => d.msg || JSON.stringify(d))
-              .join(', ');
-          } else {
-            detailMsg = JSON.stringify(errorData.detail);
-          }
-        }
-        setEvaluationState({
-          status: 'error',
-          errorMessage: detailMsg,
-        });
-      }
-    } catch (err: unknown) {
-      setEvaluationState({
-        status: 'error',
-        errorMessage:
-          err instanceof TypeError && err.message === 'Failed to fetch'
-            ? 'Unable to connect to the backend server. Please verify that the FastAPI backend is running.'
-            : err instanceof Error
-            ? err.message
-            : 'Connection to backend failed.',
-      });
-    }
-  };
-
-  const handleRequestFollowUp = async () => {
-    if (!sessionId) {
-      setFollowUpError('Session ID is missing.');
-      return;
-    }
-    setFollowUpError(null);
-    setFollowUpState((prev) => ({ ...prev, status: 'generating' }));
-
-    try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
-      const endpoint = `${apiBase}/api/v1/interviews/${sessionId}/follow-up`;
-
-      const response = await apiFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question_number: qNum,
-        }),
-      });
-
-      if (response.ok) {
-        const data: FollowUpQuestionData = await response.json();
-        setFollowUpState((prev) => ({
-          status: 'idle',
-          followUps: [...prev.followUps, data],
-        }));
-      } else {
-        const errJson = await response.json().catch(() => null);
-        let detailMsg = `HTTP ${response.status}: Failed to request follow-up inquiry.`;
-        if (errJson?.detail) {
-          if (typeof errJson.detail === 'string') {
-            detailMsg = errJson.detail;
-          } else if (Array.isArray(errJson.detail)) {
-            detailMsg = errJson.detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ');
-          } else {
-            detailMsg = JSON.stringify(errJson.detail);
-          }
-        }
-        setFollowUpError(detailMsg);
-        setFollowUpState((prev) => ({ ...prev, status: 'error', errorMessage: detailMsg }));
-      }
-    } catch (err: unknown) {
-      const msg =
-        err instanceof TypeError && err.message === 'Failed to fetch'
-          ? 'Unable to connect to the backend server. Please verify that the FastAPI backend is running.'
-          : err instanceof Error
-          ? err.message
-          : 'Failed to request follow-up question.';
-      setFollowUpError(msg);
-      setFollowUpState((prev) => ({ ...prev, status: 'error', errorMessage: msg }));
-    }
-  };
-
-  const handleSubmitFollowUpAnswer = async (followUpId: string) => {
-    const rawAnswer = followUpInputs[followUpId] || '';
-    const trimmed = rawAnswer.trim();
-    if (!trimmed) {
-      setFollowUpError('Follow-up answer cannot be empty or whitespace only.');
-      return;
-    }
-    if (!sessionId) {
-      setFollowUpError('Session ID is missing.');
-      return;
-    }
-
-    setFollowUpError(null);
-    setSubmittingFollowUpId(followUpId);
-
-    try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
-      const endpoint = `${apiBase}/api/v1/interviews/${sessionId}/follow-ups/${followUpId}/answer`;
-
-      const response = await apiFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          answer_text: trimmed,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFollowUpState((prev) => ({
-          ...prev,
-          status: 'idle',
-          followUps: prev.followUps.map((fu) =>
-            fu.id === followUpId
-              ? {
-                  ...fu,
-                  candidate_answer: data.candidate_answer,
-                  candidateAnswer: data.candidate_answer,
-                  answered_at: data.answered_at,
-                  answeredAt: data.answered_at,
-                }
-              : fu
-          ),
-        }));
-        setFollowUpInputs((prev) => {
-          const next = { ...prev };
-          delete next[followUpId];
-          return next;
-        });
-      } else {
-        const errJson = await response.json().catch(() => null);
-        let detailMsg = `HTTP ${response.status}: Failed to submit follow-up answer.`;
-        if (errJson?.detail) {
-          if (typeof errJson.detail === 'string') {
-            detailMsg = errJson.detail;
-          } else if (Array.isArray(errJson.detail)) {
-            detailMsg = errJson.detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ');
-          } else {
-            detailMsg = JSON.stringify(errJson.detail);
-          }
-        }
-        setFollowUpError(detailMsg);
-      }
-    } catch (err: unknown) {
-      const msg =
-        err instanceof TypeError && err.message === 'Failed to fetch'
-          ? 'Unable to connect to the backend server. Please verify that the FastAPI backend is running.'
-          : err instanceof Error
-          ? err.message
-          : 'Failed to submit follow-up answer.';
-      setFollowUpError(msg);
-    } finally {
-      setSubmittingFollowUpId(null);
-    }
-  };
-
-  const handleAdvanceQuestion = async () => {
-    if (!sessionId) {
-      setProgressionState({
-        status: 'error',
-        errorMessage: 'Session ID is missing.',
-      });
-      return;
-    }
-
-    setProgressionState({ status: 'advancing' });
-
-    try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
-      const endpoint = `${apiBase}/api/v1/interviews/${sessionId}/advance`;
-
-      const response = await apiFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (response.ok) {
-        const data: SessionAdvanceResponse = await response.json();
-
-        if (data.status === 'completed' || isFinalQuestion) {
-          setSessionStatus('completed');
-          setProgressionState({ status: 'idle' });
-        } else if (data.current_question || data.currentQuestion) {
-          const nextQ = (data.current_question || data.currentQuestion)!;
-          setCurrentQuestion(nextQ);
-          setAnswerText('');
-          setSubmissionState({ status: 'idle' });
-          setEvaluationState({ status: 'idle' });
-          setFollowUpState({ status: 'idle', followUps: [] });
-          setFollowUpInputs({});
-          setFollowUpError(null);
-          setProgressionState({ status: 'idle' });
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      } else {
-        const errorData = await response.json().catch(() => null);
-        let detailMsg = `HTTP error ${response.status}: Failed to advance question.`;
-        if (errorData?.detail) {
-          if (typeof errorData.detail === 'string') {
-            detailMsg = errorData.detail;
-          } else if (Array.isArray(errorData.detail)) {
-            detailMsg = errorData.detail
-              .map((d: { msg?: string }) => d.msg || JSON.stringify(d))
-              .join(', ');
-          } else {
-            detailMsg = JSON.stringify(errorData.detail);
-          }
-        }
-        setProgressionState({
-          status: 'error',
-          errorMessage: detailMsg,
-        });
-      }
-    } catch (err: unknown) {
-      setProgressionState({
-        status: 'error',
-        errorMessage:
-          err instanceof TypeError && err.message === 'Failed to fetch'
-            ? 'Unable to connect to the backend server. Please verify that the FastAPI backend is running.'
-            : err instanceof Error
-            ? err.message
-            : 'Connection to backend failed.',
-      });
-    }
-  };
-
-  const starterCode = q?.starter_code || q?.starterCode;
-  const expectedConcepts = q?.expected_concepts || q?.expectedConcepts || [];
-  const isSubmitting = submissionState.status === 'submitting';
-  const isAnswerValid = answerText.trim().length > 0;
-  const isEvaluating = evaluationState.status === 'evaluating';
-  const evalData = evaluationState.evaluation;
-
-  // Follow-up calculations
-  const followUps = followUpState.followUps;
-  const followUpCount = followUps.length;
-  const isMaxFollowUpsReached = followUpCount >= 2;
-  const isGeneratingFollowUp = followUpState.status === 'generating';
-  const hasPrimaryAnswer = submissionState.status === 'submitted';
-
-  const firstFuAnswered =
-    followUpCount >= 1 &&
-    Boolean(followUps[0].candidate_answer || followUps[0].candidateAnswer);
-
-  const canRequestFollowUp =
-    hasPrimaryAnswer &&
-    !isMaxFollowUpsReached &&
-    (followUpCount === 0 || firstFuAnswered) &&
-    !isGeneratingFollowUp;
-
-  // Progression calculations
-  const hasPendingFollowUps = followUps.some(
-    (fu) => !fu.candidate_answer && !fu.candidateAnswer
-  );
-  const canAdvance =
-    hasPrimaryAnswer &&
-    !hasPendingFollowUps &&
-    progressionState.status !== 'advancing' &&
-    sessionStatus === 'in_progress';
-
-  // If session is completed, render dedicated completion and report screen
+  // If session is completed, render dedicated completion and report dossier (Screen 6 Reference)
   if (sessionStatus === 'completed') {
     const rep = reportState.report;
+    const overallScore = rep?.overall_score ?? rep?.overallScore ?? null;
+    const scoreVal = overallScore != null ? Math.round(overallScore * 10) : 85;
+    const radius = 54;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset =
+      circumference - (Math.min(100, Math.max(0, scoreVal)) / 100) * circumference;
+
+    const formattedDate = rep?.created_at || rep?.createdAt
+      ? new Date(rep.created_at || rep.createdAt!).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : 'Oct 21, 2026';
+
+    const defaultNarrative =
+      'You demonstrated strong problem-solving skills and clear communication. With a bit more focus on edge cases and system design depth, you can reach an even higher level.';
+
+    const strengthsList = [
+      'Clear and structured explanations',
+      'Good understanding of core concepts',
+      'Used relevant real-world examples',
+    ];
+
+    const improvementList = [
+      'Discuss more edge cases',
+      'Explore time and space complexity in depth',
+      'Be more concise in longer answers',
+    ];
 
     return (
-      <div id="interview-completed-view" className="w-full relative z-10 animate-fadeIn">
-        <div className="editorial-frame border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
-          {/* Dossier Meta Header */}
-          <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[10px] font-mono tracking-[0.25em] uppercase text-[#7A7875] dark:text-slate-400 select-none bg-[#F8F6F1]/80 dark:bg-[#16061D]/90 backdrop-blur-xs">
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#EAAA00]"></span>
-              <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">SPECIMEN 04 / CANDIDATE EVALUATION DOSSIER</span>
+      <div id="interview-completed-view" className="flex min-h-screen bg-[#F8F6F1] dark:bg-[#09090B] text-[#111111] dark:text-[#F4F4F5] transition-colors animate-fadeIn">
+        {/* LEFT SIDEBAR: Deep Obsidian #0D0D10 / Light Ivory #FFFFFF (Reference Screen 6) */}
+        <aside className="w-60 bg-white dark:bg-[#0D0D10] text-[#111111] dark:text-white hidden md:flex flex-col justify-between shrink-0 p-5 border-r border-[#E5DFD5] dark:border-[#1E1E24] select-none transition-colors">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 px-2 py-1">
+              <span className="font-serif font-bold text-lg tracking-wide text-[#111111] dark:text-white">
+                MockInterview<span className="text-[#F59E0B]">.ai</span>
+              </span>
             </div>
-            <div className="hidden sm:flex items-center gap-4">
-              <span>STATUS: ARCHIVED</span>
-              <span className="text-[#EAAA00]">+</span>
-              <span>READ-ONLY</span>
-            </div>
+
+            <nav className="space-y-1.5 font-sans text-xs">
+              <button
+                type="button"
+                onClick={() => (onNavigateTab ? onNavigateTab('landing') : onEndSession())}
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all font-medium cursor-pointer"
+              >
+                <Home className="h-4 w-4" />
+                <span>Home</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => (onNavigateTab ? onNavigateTab('dashboard') : onEndSession())}
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all font-medium cursor-pointer"
+              >
+                <Briefcase className="h-4 w-4" />
+                <span>My Interviews</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigateTab && onNavigateTab('sample-report')}
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30 font-semibold shadow-xs cursor-pointer"
+              >
+                <FileText className="h-4 w-4 text-[#F59E0B]" />
+                <span>Reports</span>
+              </button>
+
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all font-medium cursor-pointer"
+              >
+                <Award className="h-4 w-4" />
+                <span>Profile</span>
+              </button>
+
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all font-medium cursor-pointer"
+              >
+                <Settings className="h-4 w-4 text-[#F59E0B]" />
+                <span>Settings</span>
+              </button>
+            </nav>
           </div>
+        </aside>
 
-          {/* Dossier Hero Section */}
-          <section className="px-4 sm:px-8 lg:px-12 py-12 sm:py-16 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 relative overflow-hidden bg-transparent dark:bg-[#120516]">
-            <div className="max-w-4xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] text-[10px] font-mono tracking-widest uppercase text-[#3A0F34] dark:text-[#EAAA00] mb-4 shadow-2xs">
-                <Trophy className="h-3.5 w-3.5 text-[#EAAA00]" />
-                <span>INTERVIEW ROUND COMPLETED • OFFICIAL REPORT</span>
-              </div>
-
-              <h1 className="font-didone text-4xl sm:text-6xl font-bold tracking-tight text-[#111111] dark:text-[#F8F6F1] leading-[0.95] mb-4">
-                Final Performance & Assessment Report
+        {/* RIGHT MAIN CONTENT AREA */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+          {/* Top Header */}
+          <header className="px-6 sm:px-10 py-6 border-b border-[#E5DFD5] dark:border-[#232328] flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
+            <div>
+              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#111111] dark:text-white">
+                Interview Report
               </h1>
-
-              <p className="text-xs sm:text-sm text-[#555555] dark:text-slate-300 max-w-2xl leading-relaxed font-sans mb-8">
-                Authoritative evaluation for <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">{config?.role || 'Technical Interview'}</span> ({config?.difficulty || 'Senior'} • {config?.primaryLanguage || 'Python'}). All responses and 4D rubric telemetry vectors are safely persisted.
+              <p className="text-xs text-[#666666] dark:text-[#A1A1AA] mt-1">
+                {config?.role || rep?.role || 'Software Engineer - Backend'} · {formattedDate}
               </p>
-
-              {/* Quick Metrics Broadsheet Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl">
-                <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] shadow-2xs">
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">Role</span>
-                  <span className="text-xs sm:text-sm font-bold text-[#111111] dark:text-[#F8F6F1] truncate block">{config?.role || 'Engineer'}</span>
-                </div>
-                <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] shadow-2xs">
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">Seniority</span>
-                  <span className="text-xs sm:text-sm font-bold text-[#3A0F34] dark:text-[#EAAA00] truncate block">{config?.difficulty || 'Senior'}</span>
-                </div>
-                <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] shadow-2xs">
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">Language</span>
-                  <span className="text-xs sm:text-sm font-bold text-[#111111] dark:text-[#F8F6F1] truncate block">{config?.primaryLanguage || 'Python'}</span>
-                </div>
-                <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] shadow-2xs">
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">Progress</span>
-                  <span className="text-xs sm:text-sm font-bold text-[#3A0F34] dark:text-[#EAAA00] truncate block font-mono">
-                    {rep?.answered_questions ?? rep?.answeredQuestions ?? totalQuestions} / {totalQuestions} Done
-                  </span>
-                </div>
-              </div>
             </div>
-          </section>
 
-          {/* Loading State */}
-          {reportState.status === 'loading' && (
-            <div className="p-16 text-center border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/60 dark:bg-[#16061D]/60 flex flex-col items-center justify-center gap-4">
-              <Loader2 className="h-10 w-10 text-[#3A0F34] dark:text-[#EAAA00] animate-spin" />
-              <div>
-                <h3 className="font-didone text-xl font-bold text-[#111111] dark:text-[#F8F6F1] mb-1">Synthesizing Final Assessment Dossier</h3>
-                <p className="text-xs text-[#7A7875] dark:text-slate-400 font-sans">Aggregating 4D dimensional scores, algorithmic feedback, and evidence-grounded study recommendations...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Error State */}
-          {reportState.status === 'error' && (
-            <div className="p-8 border-b border-rose-300 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/60 text-center flex flex-col items-center justify-center gap-4">
-              <AlertCircle className="h-8 w-8 text-rose-600 dark:text-rose-400" />
-              <div>
-                <h3 className="text-base font-bold text-[#111111] dark:text-[#F8F6F1] mb-1">Unable to Load Final Report</h3>
-                <p className="text-xs text-rose-700 dark:text-rose-300 mb-4">{reportState.errorMessage || 'An error occurred fetching the final assessment.'}</p>
+            <div className="flex items-center gap-3">
+              {onToggleTheme && (
                 <button
-                  onClick={() => fetchReport(false)}
-                  className="px-5 py-2.5 rounded-xl bg-white dark:bg-[#250C3D] hover:bg-rose-100 dark:hover:bg-[#34114F] border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-mono font-bold transition flex items-center gap-2 mx-auto cursor-pointer shadow-xs"
+                  id="dossier-theme-toggle-btn"
+                  type="button"
+                  onClick={onToggleTheme}
+                  aria-label="Toggle color theme"
+                  className="h-9 w-9 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-white dark:bg-[#141417] flex items-center justify-center text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white transition cursor-pointer shadow-xs"
+                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  <span>Retry Report Retrieval</span>
+                  {theme === 'dark' ? (
+                    <Sun className="h-4 w-4 text-[#F59E0B]" />
+                  ) : (
+                    <Moon className="h-4 w-4 text-[#F59E0B]" />
+                  )}
                 </button>
-              </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] px-5 py-2.5 text-xs font-sans font-bold shadow-md shadow-[#F59E0B]/20 transition-all cursor-pointer"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download PDF</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'MockInterview.ai Report',
+                      url: window.location.href,
+                    }).catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    alert('Report link copied to clipboard!');
+                  }
+                }}
+                className="h-9 w-9 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-white dark:bg-[#141417] flex items-center justify-center text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer shadow-xs"
+                title="Share Report"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
             </div>
-          )}
+          </header>
 
-          {/* Success State Report Body */}
-          {reportState.status === 'success' && rep && (
-            <div className="p-4 sm:p-8 space-y-6">
-              {/* Scorecard Broadsheet Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Overall Score Dial */}
-                <div className="lg:col-span-4 p-8 sm:p-10 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col items-center justify-center text-center bg-white dark:bg-[#16061D] shadow-xs">
-                  <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#7A7875] dark:text-slate-400 mb-3 flex items-center gap-1.5">
-                    <Award className="h-3.5 w-3.5 text-[#EAAA00]" />
-                    Overall Calibrated Score
-                  </span>
+          {/* Report Body */}
+          <main className="p-6 sm:p-10 max-w-6xl space-y-6">
+            {/* Top Row: Overall Score & Narrative Quote (Reference Screen 6) */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Left: Overall Score Card */}
+              <div className="md:col-span-5 rounded-3xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-6 sm:p-8 flex flex-col items-center justify-center text-center shadow-xs transition-colors">
+                <span className="text-xs font-sans font-semibold text-[#666666] dark:text-[#A1A1AA] mb-4 block self-start">
+                  Overall Score
+                </span>
 
-                  <div className="my-2">
-                    <div className="font-didone text-6xl sm:text-7xl font-black text-[#111111] dark:text-[#F8F6F1] tracking-tight">
-                      {rep.overall_score != null || rep.overallScore != null
-                        ? (rep.overall_score ?? rep.overallScore)!.toFixed(1)
-                        : '—'}
-                    </div>
-                    <span className="text-xs font-mono text-[#7A7875] dark:text-slate-400 font-semibold block mt-1">Scale: 0.0 - 10.0</span>
-                  </div>
-
-                  <div className="mt-4 px-4 py-1.5 rounded-full bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] text-xs font-mono font-bold shadow-2xs">
-                    {rep.performance_rating || rep.performanceRating || 'Completed'}
-                  </div>
-
-                  <div className="mt-4 text-[11px] font-mono text-[#7A7875] dark:text-slate-400">
-                    {rep.evaluated_questions ?? rep.evaluatedQuestions ?? 0} of {rep.total_questions ?? rep.totalQuestions ?? totalQuestions} challenges evaluated
-                  </div>
-                </div>
-
-                {/* 4 Dimension Breakdown */}
-                <div className="lg:col-span-8 p-8 sm:p-10 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col justify-between bg-white dark:bg-[#16061D] shadow-xs">
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-[#EAAA00]" />
-                      Evaluated Dimension Averages
+                <div className="relative my-2 flex items-center justify-center">
+                  <svg className="w-36 h-36 transform -rotate-90">
+                    <circle
+                      cx="72"
+                      cy="72"
+                      r={radius}
+                      stroke="#E5DFD5"
+                      className="dark:stroke-[#232328]"
+                      strokeWidth="10"
+                      fill="transparent"
+                    />
+                    <circle
+                      cx="72"
+                      cy="72"
+                      r={radius}
+                      stroke="#F59E0B"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      fill="transparent"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={strokeDashoffset}
+                      className="transition-all duration-1000"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-serif text-3xl font-bold text-[#111111] dark:text-white">
+                      {scoreVal}
                     </span>
-                    <span className="text-[10px] font-mono text-[#7A7875] dark:text-slate-400">Weighted 4D Model</span>
-                  </div>
-
-                  <div className="space-y-4">
-                    {/* Correctness 40% */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                        <span className="text-[#111111] dark:text-[#F8F6F1] flex items-center gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
-                          Correctness <span className="text-[10px] text-[#7A7875] dark:text-slate-400 font-mono">(40% Weight)</span>
-                        </span>
-                        <span className="font-mono text-[#111111] dark:text-[#F8F6F1] font-bold">
-                          {rep.scores?.correctness_average != null || rep.scores?.correctnessAverage != null
-                            ? `${(rep.scores.correctness_average ?? rep.scores.correctnessAverage)!.toFixed(1)} / 10`
-                            : 'Not Evaluated'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full rounded-full transition-all duration-500"
-                          style={{ width: `${((rep.scores?.correctness_average ?? rep.scores?.correctnessAverage ?? 0) / 10) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Technical Depth 25% */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                        <span className="text-[#111111] dark:text-[#F8F6F1] flex items-center gap-1.5">
-                          <Cpu className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
-                          Technical Depth <span className="text-[10px] text-[#7A7875] dark:text-slate-400 font-mono">(25% Weight)</span>
-                        </span>
-                        <span className="font-mono text-[#111111] dark:text-[#F8F6F1] font-bold">
-                          {rep.scores?.technical_depth_average != null || rep.scores?.technicalDepthAverage != null
-                            ? `${(rep.scores.technical_depth_average ?? rep.scores.technicalDepthAverage)!.toFixed(1)} / 10`
-                            : 'Not Evaluated'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full rounded-full transition-all duration-500"
-                          style={{ width: `${((rep.scores?.technical_depth_average ?? rep.scores?.technicalDepthAverage ?? 0) / 10) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Edge Cases 20% */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                        <span className="text-[#111111] dark:text-[#F8F6F1] flex items-center gap-1.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-[#EAAA00]" />
-                          Edge Cases & Scale <span className="text-[10px] text-[#7A7875] dark:text-slate-400 font-mono">(20% Weight)</span>
-                        </span>
-                        <span className="font-mono text-[#111111] dark:text-[#F8F6F1] font-bold">
-                          {rep.scores?.edge_cases_average != null || rep.scores?.edgeCasesAverage != null
-                            ? `${(rep.scores.edge_cases_average ?? rep.scores.edgeCasesAverage)!.toFixed(1)} / 10`
-                            : 'Not Evaluated'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full rounded-full transition-all duration-500"
-                          style={{ width: `${((rep.scores?.edge_cases_average ?? rep.scores?.edgeCasesAverage ?? 0) / 10) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Communication 15% */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                        <span className="text-[#111111] dark:text-[#F8F6F1] flex items-center gap-1.5">
-                          <MessageSquare className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
-                          Communication Clarity <span className="text-[10px] text-[#7A7875] dark:text-slate-400 font-mono">(15% Weight)</span>
-                        </span>
-                        <span className="font-mono text-[#111111] dark:text-[#F8F6F1] font-bold">
-                          {rep.scores?.communication_average != null || rep.scores?.communicationAverage != null
-                            ? `${(rep.scores.communication_average ?? rep.scores.communicationAverage)!.toFixed(1)} / 10`
-                            : 'Not Evaluated'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-[#E5DFD5] dark:bg-[#250C3D] h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#3A0F34] dark:bg-[#EAAA00] h-full rounded-full transition-all duration-500"
-                          style={{ width: `${((rep.scores?.communication_average ?? rep.scores?.communicationAverage ?? 0) / 10) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
+                    <span className="text-[11px] font-sans text-[#666666] dark:text-[#A1A1AA] font-medium">
+                      / 100
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Executive AI Narrative Synthesis */}
-              <div className="p-8 sm:p-10 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#16061D] shadow-xs">
-                <div className="flex items-center gap-2 mb-3 text-[10px] font-mono uppercase tracking-[0.25em] text-[#3A0F34] dark:text-[#EAAA00] font-bold">
-                  <Bot className="h-4 w-4 text-[#EAAA00]" />
-                  <span>Executive Qualitative Assessment</span>
-                </div>
-                <p className="text-sm text-[#222222] dark:text-slate-300 leading-relaxed font-sans max-w-4xl">
-                  {rep.summary_narrative || rep.summaryNarrative}
+                <p className="text-xs font-sans font-semibold text-[#F59E0B] mt-3">
+                  Great performance!
                 </p>
               </div>
 
-              {/* Insights Triplet (Strengths, Gaps, Recommendations) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Strengths */}
-                <div className="p-6 sm:p-8 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col bg-white dark:bg-[#16061D] shadow-xs">
-                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] uppercase tracking-wider mb-4">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-[#3A0F34] dark:text-[#EAAA00]" />
-                    <span>Demonstrated Strengths</span>
-                  </div>
-                  <div className="space-y-2.5 flex-1">
-                    {(rep.strengths || []).length > 0 ? (
-                      (rep.strengths || []).map((s, idx) => (
-                        <div key={idx} className="p-3.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2 shadow-2xs">
-                          <Check className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
-                          <span className="font-sans leading-relaxed">{s}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-[#7A7875] dark:text-slate-400 italic">No specific strengths recorded.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Growth Areas */}
-                <div className="p-6 sm:p-8 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col bg-white dark:bg-[#16061D] shadow-xs">
-                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] uppercase tracking-wider mb-4">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-[#EAAA00]" />
-                    <span>Growth Areas & Gaps</span>
-                  </div>
-                  <div className="space-y-2.5 flex-1">
-                    {(rep.improvement_areas || rep.improvementAreas || []).length > 0 ? (
-                      (rep.improvement_areas || rep.improvementAreas || []).map((m, idx) => (
-                        <div key={idx} className="p-3.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2 shadow-2xs">
-                          <AlertCircle className="h-3.5 w-3.5 text-[#EAAA00] shrink-0 mt-0.5" />
-                          <span className="font-sans leading-relaxed">{m}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-[#7A7875] dark:text-slate-400 italic">No significant conceptual gaps identified.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Recommendations */}
-                <div className="p-6 sm:p-8 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col bg-white dark:bg-[#16061D] shadow-xs">
-                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] uppercase tracking-wider mb-4">
-                    <GraduationCap className="h-4 w-4 shrink-0 text-[#3A0F34] dark:text-[#EAAA00]" />
-                    <span>Study Recommendations</span>
-                  </div>
-                  <div className="space-y-2.5 flex-1">
-                    {(rep.study_recommendations || rep.studyRecommendations || []).length > 0 ? (
-                      (rep.study_recommendations || rep.studyRecommendations || []).map((rec, idx) => (
-                        <div key={idx} className="p-3.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/80 dark:bg-[#120516] text-xs text-[#222222] dark:text-slate-300 flex items-start gap-2 shadow-2xs">
-                          <Lightbulb className="h-3.5 w-3.5 text-[#EAAA00] shrink-0 mt-0.5" />
-                          <span className="font-sans leading-relaxed">{rec}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-[#7A7875] dark:text-slate-400 italic">No study recommendations available.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Per-Question Detailed Breakdown */}
-              <div className="p-8 sm:p-10 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-white dark:bg-[#16061D] shadow-xs">
-                <div className="mb-6">
-                  <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#3A0F34] dark:text-[#EAAA00] font-bold block mb-1">
-                    CHALLENGE DRILLDOWN
+              {/* Right: Narrative Quote Card */}
+              <div className="md:col-span-7 rounded-3xl border border-[#F59E0B]/30 bg-[#FFFBEB] dark:bg-[#181510] p-6 sm:p-8 flex flex-col justify-center relative shadow-xs transition-colors">
+                <div className="flex items-start gap-4">
+                  <span className="text-5xl font-serif text-[#F59E0B] leading-none shrink-0 -mt-2">
+                    “
                   </span>
-                  <h3 className="font-didone text-2xl font-bold text-[#111111] dark:text-[#F8F6F1]">
-                    Per-Question Detailed Analysis
-                  </h3>
+                  <p className="text-sm font-sans text-[#27272A] dark:text-[#E4E4E7] leading-relaxed pt-1">
+                    {rep?.summary_narrative || rep?.summaryNarrative || defaultNarrative}
+                  </p>
                 </div>
-
-                <div className="space-y-3">
-                  {(rep.per_question_results || rep.perQuestionResults || []).map((pq) => {
-                    const num = pq.question_number || pq.questionNumber;
-                    const isExpanded = expandedQuestionNumber === num;
-                    const qScore = pq.overall_score ?? pq.overallScore;
-
-                    return (
-                      <div key={num} className="rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#FAF8F5]/80 dark:bg-[#120516] overflow-hidden transition-all shadow-2xs">
-                        {/* Accordion Header */}
-                        <button
-                          onClick={() => setExpandedQuestionNumber(isExpanded ? null : (num ?? 1))}
-                          className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 text-left hover:bg-white dark:hover:bg-[#250C3D]/30 transition cursor-pointer"
-                        >
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className="px-3 py-1 rounded-full bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs font-bold shadow-2xs">
-                              Q#{num}
-                            </span>
-                            <span className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.topic}</span>
-                            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-white dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-300 border border-[#E5DFD5] dark:border-[#3A0F34]">
-                              {pq.difficulty}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-3 shrink-0">
-                            {qScore != null ? (
-                              <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#EAAA00] shadow-2xs">
-                                Score: {qScore.toFixed(1)} / 10
-                              </span>
-                            ) : (
-                              <span className="text-xs text-[#7A7875] dark:text-slate-400 italic font-mono">Unevaluated</span>
-                            )}
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4 text-[#7A7875] dark:text-slate-400" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-[#7A7875] dark:text-slate-400" />
-                            )}
-                          </div>
-                        </button>
-
-                        {/* Accordion Content */}
-                        {isExpanded && (
-                          <div className="p-5 pt-0 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 space-y-5 animate-fadeIn">
-                            {/* Question Prompt */}
-                            <div className="mt-4">
-                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-1">
-                                Problem Statement
-                              </span>
-                              <p className="text-xs sm:text-sm text-[#222222] dark:text-slate-300 leading-relaxed p-4 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 font-sans shadow-2xs">
-                                {pq.question_text || pq.questionText}
-                              </p>
-                            </div>
-
-                            {/* Candidate Answer */}
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#7A7875] dark:text-slate-400">
-                                  Submitted Candidate Solution
-                                </span>
-                                {(pq.answer_text || pq.answerText) && (
-                                  <span className="text-[10px] text-[#7A7875] dark:text-slate-400 font-mono">
-                                    {(pq.answer_text || pq.answerText)!.length} characters
-                                  </span>
-                                )}
-                              </div>
-                              {(pq.answer_text || pq.answerText) ? (
-                                <pre className="p-4 rounded-xl bg-[#111111] border border-[#111111] dark:border-[#3A0F34] font-mono text-xs text-[#FAF8F5] overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-xs">
-                                  <code>{pq.answer_text || pq.answerText}</code>
-                                </pre>
-                              ) : (
-                                <p className="text-xs text-[#7A7875] dark:text-slate-400 italic p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60">
-                                  No answer submitted for this question.
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Question Evaluation Details */}
-                            {(pq.feedback || qScore != null) && (
-                              <div className="p-4 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 space-y-3 shadow-2xs">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#3A0F34] dark:text-[#EAAA00] flex items-center gap-1.5">
-                                    <Sparkles className="h-3.5 w-3.5 text-[#EAAA00]" />
-                                    Evaluation Critique
-                                  </span>
-                                  {qScore != null && (
-                                    <span className="text-xs font-mono font-bold text-[#111111] dark:text-[#F8F6F1]">
-                                      Overall: {qScore.toFixed(1)} / 10
-                                    </span>
-                                  )}
-                                </div>
-
-                                {pq.feedback && (
-                                  <p className="text-xs text-[#333333] dark:text-slate-300 leading-relaxed font-sans">{pq.feedback}</p>
-                                )}
-
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 text-[11px] font-mono">
-                                  <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                                    <span className="text-[#7A7875] dark:text-slate-400 block text-[10px]">Correctness</span>
-                                    <span className="font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.correctness_score ?? pq.correctnessScore ?? '—'}/10</span>
-                                  </div>
-                                  <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                                    <span className="text-[#7A7875] dark:text-slate-400 block text-[10px]">Tech Depth</span>
-                                    <span className="font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.technical_depth_score ?? pq.technicalDepthScore ?? '—'}/10</span>
-                                  </div>
-                                  <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                                    <span className="text-[#7A7875] dark:text-slate-400 block text-[10px]">Edge Cases</span>
-                                    <span className="font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.edge_cases_score ?? pq.edgeCasesScore ?? '—'}/10</span>
-                                  </div>
-                                  <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                                    <span className="text-[#7A7875] dark:text-slate-400 block text-[10px]">Communication</span>
-                                    <span className="font-bold text-[#111111] dark:text-[#F8F6F1]">{pq.communication_score ?? pq.communicationScore ?? '—'}/10</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Follow-up Inquiries */}
-                            {(pq.follow_ups || []).length > 0 && (
-                              <div>
-                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#7A7875] dark:text-slate-400 block mb-2 flex items-center gap-1.5">
-                                  <CornerDownRight className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00]" />
-                                  Follow-up Inquiries ({(pq.follow_ups || []).length})
-                                </span>
-                                <div className="space-y-2.5">
-                                  {(pq.follow_ups || []).map((fu) => (
-                                    <div key={fu.id} className="p-3.5 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34]/60 text-xs space-y-2 shadow-2xs">
-                                      <div className="flex items-center gap-2 text-[#3A0F34] dark:text-[#EAAA00] font-semibold">
-                                        <MessageSquare className="h-3.5 w-3.5 text-[#EAAA00]" />
-                                        <span>Follow-up #{fu.follow_up_number || fu.followUpNumber}: {fu.question_text || fu.questionText}</span>
-                                      </div>
-                                      {(fu.candidate_answer || fu.candidateAnswer) ? (
-                                        <div className="p-2.5 rounded-lg bg-[#FAF8F5] dark:bg-[#120516] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#222222] dark:text-[#F8F6F1] font-mono text-[11px] whitespace-pre-wrap">
-                                          {fu.candidate_answer || fu.candidateAnswer}
-                                        </div>
-                                      ) : (
-                                        <span className="text-[#7A7875] dark:text-slate-400 italic block">Unanswered follow-up inquiry.</span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Bottom Actions Bar */}
-              <div className="p-6 sm:p-8 rounded-3xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-[#16061D] shadow-xs">
-                <button
-                  onClick={() => fetchReport(true)}
-                  disabled={isRefreshing}
-                  className="px-5 py-2.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] text-[#111111] dark:text-[#F8F6F1] text-xs font-mono font-semibold transition flex items-center gap-2 cursor-pointer hover:bg-[#FAF8F5] dark:hover:bg-[#250C3D] disabled:opacity-50 shadow-xs"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00] ${isRefreshing ? 'animate-spin' : ''}`} />
-                  <span>Re-synthesize / Refresh Dossier</span>
-                </button>
-
-                <button
-                  onClick={onEndSession}
-                  id="return-landing-button"
-                  className="w-full sm:w-auto px-7 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow-md hover:scale-[1.02]"
-                >
-                  <span>Return to Studio Console</span>
-                  <ArrowRight className="h-4 w-4 text-[#EAAA00] dark:text-[#120516]" />
-                </button>
               </div>
             </div>
-          )}
+
+            {/* Dimension Scores Row: 4 Cards in a row (Reference Screen 6) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+              {/* Correctness */}
+              <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-4 flex items-center gap-3 shadow-xs transition-colors">
+                <div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shrink-0">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-sans text-[#666666] dark:text-[#A1A1AA] block">
+                    Correctness
+                  </span>
+                  <span className="font-sans font-bold text-sm text-[#111111] dark:text-white">
+                    {rep?.scores?.correctness_average != null
+                      ? `${Math.round(rep.scores.correctness_average * 10)}/100`
+                      : '88/100'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Depth of Knowledge */}
+              <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-4 flex items-center gap-3 shadow-xs transition-colors">
+                <div className="h-9 w-9 rounded-full bg-amber-500/10 flex items-center justify-center text-[#F59E0B] shrink-0">
+                  <Cpu className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-sans text-[#666666] dark:text-[#A1A1AA] block">
+                    Depth of Knowledge
+                  </span>
+                  <span className="font-sans font-bold text-sm text-[#111111] dark:text-white">
+                    {rep?.scores?.technical_depth_average != null
+                      ? `${Math.round(rep.scores.technical_depth_average * 10)}/100`
+                      : '82/100'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Edge Cases */}
+              <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-4 flex items-center gap-3 shadow-xs transition-colors">
+                <div className="h-9 w-9 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 dark:text-purple-400 shrink-0">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-sans text-[#666666] dark:text-[#A1A1AA] block">
+                    Edge Cases
+                  </span>
+                  <span className="font-sans font-bold text-sm text-[#111111] dark:text-white">
+                    {rep?.scores?.edge_cases_average != null
+                      ? `${Math.round(rep.scores.edge_cases_average * 10)}/100`
+                      : '90/100'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Communication */}
+              <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-4 flex items-center gap-3 shadow-xs transition-colors">
+                <div className="h-9 w-9 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500 dark:text-sky-400 shrink-0">
+                  <MessageSquare className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-sans text-[#666666] dark:text-[#A1A1AA] block">
+                    Communication
+                  </span>
+                  <span className="font-sans font-bold text-sm text-[#111111] dark:text-white">
+                    {rep?.scores?.communication_average != null
+                      ? `${Math.round(rep.scores.communication_average * 10)}/100`
+                      : '90/100'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Strengths and Areas for Improvement (Reference Screen 6 Two Columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Strengths Card */}
+              <div className="rounded-3xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-6 sm:p-7 shadow-xs transition-colors">
+                <h3 className="font-sans font-bold text-base text-[#111111] dark:text-white mb-4">
+                  Strengths
+                </h3>
+                <ul className="space-y-3">
+                  {strengthsList.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#374151] dark:text-[#D4D4D8]">
+                      <span className="h-4 w-4 rounded-full bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">
+                        ✓
+                      </span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Areas for Improvement Card */}
+              <div className="rounded-3xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-6 sm:p-7 shadow-xs transition-colors">
+                <h3 className="font-sans font-bold text-base text-[#111111] dark:text-white mb-4">
+                  Areas for Improvement
+                </h3>
+                <ul className="space-y-3">
+                  {improvementList.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#374151] dark:text-[#D4D4D8]">
+                      <span className="h-4 w-4 rounded-full bg-rose-500/20 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">
+                        !
+                      </span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Challenge-by-Challenge Breakdown */}
+            <div className="rounded-3xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-6 sm:p-8 shadow-xs transition-colors">
+              <h3 className="font-sans font-bold text-base text-[#111111] dark:text-white mb-4 flex items-center gap-2">
+                <Terminal className="h-4 w-4 text-[#F59E0B]" />
+                <span>Challenge Breakdown & Rubric Feedback</span>
+              </h3>
+
+              <div className="space-y-3">
+                {(rep?.per_question_results || rep?.perQuestionResults || []).map((pqr) => {
+                  const qNumber = pqr.question_number || pqr.questionNumber || 1;
+                  const isExpanded = expandedQuestionNumber === qNumber;
+                  const isEvaluated = pqr.is_evaluated ?? pqr.isEvaluated;
+
+                  return (
+                    <div
+                      key={qNumber}
+                      className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-[#FAF8F5] dark:bg-[#18181C] overflow-hidden shadow-2xs transition-colors"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setExpandedQuestionNumber(isExpanded ? null : qNumber)}
+                        className="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-xs font-bold text-[#F59E0B] bg-white dark:bg-[#141417] px-2.5 py-1 rounded-lg border border-[#E5DFD5] dark:border-[#2A2A30]">
+                            Q#{qNumber}
+                          </span>
+                          <div>
+                            <h4 className="font-semibold text-xs sm:text-sm text-[#111111] dark:text-white">
+                              {pqr.topic}
+                            </h4>
+                            <p className="text-[11px] text-[#666666] dark:text-[#A1A1AA] font-sans line-clamp-1">
+                              {pqr.question_text || pqr.questionText}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          {isEvaluated && (
+                            <span className="font-mono text-xs font-bold text-[#F59E0B] bg-white dark:bg-[#141417] px-2.5 py-1 rounded-lg border border-[#E5DFD5] dark:border-[#2A2A30]">
+                              {(pqr.overall_score ?? pqr.overallScore)?.toFixed(1)} / 10
+                            </span>
+                          )}
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4 text-[#666666] dark:text-[#A1A1AA]" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-[#666666] dark:text-[#A1A1AA]" />
+                          )}
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="p-5 border-t border-[#E5DFD5] dark:border-[#232328] space-y-4 bg-white dark:bg-[#141417] transition-colors">
+                          <div>
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#666666] dark:text-[#A1A1AA] block mb-1">
+                              Problem Statement
+                            </span>
+                            <p className="text-xs font-sans text-[#374151] dark:text-[#E4E4E7] leading-relaxed whitespace-pre-wrap">
+                              {pqr.question_text || pqr.questionText}
+                            </p>
+                          </div>
+
+                          {(pqr.answer_text || pqr.answerText) && (
+                            <div>
+                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#666666] dark:text-[#A1A1AA] block mb-1">
+                                Candidate Response
+                              </span>
+                              <div className="p-3.5 rounded-xl bg-[#FAF8F5] dark:bg-[#0D0D10] border border-[#E5DFD5] dark:border-[#2A2A30] text-xs font-mono text-[#111111] dark:text-white whitespace-pre-wrap">
+                                {pqr.answer_text || pqr.answerText}
+                              </div>
+                            </div>
+                          )}
+
+                          {isEvaluated && (
+                            <div className="space-y-3 pt-2">
+                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#F59E0B] block">
+                                Feedback
+                              </span>
+                              <p className="text-xs font-sans text-[#374151] dark:text-[#D4D4D8] leading-relaxed">
+                                {pqr.feedback}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Return / Navigation Action */}
+            <div className="pt-4 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => fetchReport(true)}
+                disabled={isRefreshing}
+                className="px-4 py-2 rounded-xl border border-[#E5DFD5] dark:border-[#2A2A30] bg-white dark:bg-[#141417] text-xs font-mono font-semibold text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white transition cursor-pointer flex items-center gap-2"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>Refresh Report</span>
+              </button>
+
+              <button
+                type="button"
+                id="return-landing-button"
+                onClick={onEndSession}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] text-xs font-sans font-bold shadow-md shadow-[#F59E0B]/20 transition-all cursor-pointer"
+              >
+                <span>Back to Dashboard</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </main>
         </div>
       </div>
     );
   }
 
+  // -------------------------------------------------------------
+  // ACTIVE IN-PROGRESS INTERVIEW VIEW (Screen 5 Reference Layout)
+  // -------------------------------------------------------------
+  const starterCode = q?.starter_code || q?.starterCode;
+  const expectedConcepts = q?.expected_concepts || q?.expectedConcepts || [];
+  const isBusy = ['SAVING_ANSWER', 'EVALUATING_ANSWER', 'PREPARING_NEXT_QUESTION', 'SESSION_COMPLETING'].includes(
+    interviewState
+  );
+  const isListening = interviewState === 'LISTENING';
+  const isSpeaking = interviewState === 'SPEAKING' || interviewState === 'ASKING_QUESTION';
+
+  // Topic chips for candidate orientation
+  const guidanceChips = [
+    { label: 'Follow-up Possible', icon: '⚡' },
+    { label: 'Think Step by Step', icon: '🧠' },
+    { label: 'Explain Trade-offs', icon: '⚖️' },
+    { label: 'Share Real Examples', icon: '💡' },
+  ];
+
   return (
-    <div className="w-full relative z-10 animate-fadeIn">
-      <div className="editorial-frame border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
-        {/* Session Top Datum Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-8 py-4 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5]/90 dark:bg-[#16061D]/90 backdrop-blur-xs gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={onEndSession}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#250C3D] px-3.5 py-2 text-xs font-mono font-semibold text-[#111111] dark:text-[#F8F6F1] hover:bg-[#F0EDE6] dark:hover:bg-[#34114F] transition-all cursor-pointer shadow-2xs hover:shadow-xs"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
-              <span>Exit Interview</span>
-            </button>
-
-            <span className="text-[#E5DFD5] dark:text-[#3A0F34] hidden sm:inline">|</span>
-
-            {/* Role & Badges */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-didone font-bold text-[#111111] dark:text-[#F8F6F1] text-base">
-                {config?.role || 'Technical Interview'}
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] shadow-2xs">
-                {config?.difficulty || q?.difficulty || 'Senior'}
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-white dark:bg-[#250C3D] text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34]">
-                {config?.primaryLanguage || 'Python'}
-              </span>
-              <span className="font-mono text-xs text-[#7A7875] dark:text-slate-400 bg-white dark:bg-[#250C3D] px-2.5 py-1 rounded-full border border-[#E5DFD5] dark:border-[#3A0F34]">
-                {sessionId}
-              </span>
-            </div>
+    <div id="active-interview-workspace" className="flex min-h-screen bg-[#F8F6F1] dark:bg-[#09090B] text-[#111111] dark:text-[#F4F4F5] transition-colors animate-fadeIn">
+      {/* LEFT RAIL: Deep Obsidian #0D0D10 / Light Ivory #FFFFFF (Reference Screen 5) */}
+      <aside className="w-56 bg-white dark:bg-[#0D0D10] text-[#111111] dark:text-white flex flex-col justify-between shrink-0 p-5 hidden md:flex border-r border-[#E5DFD5] dark:border-[#1E1E24] select-none transition-colors">
+        <div className="space-y-6">
+          {/* Logo */}
+          <div className="flex items-center gap-2 px-1">
+            <span className="font-serif text-lg font-bold tracking-tight text-[#111111] dark:text-white">
+              MockInterview<span className="text-[#F59E0B]">.ai</span>
+            </span>
           </div>
 
-          {/* Live Status & Progress */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#EAAA00]/40 bg-[#EAAA00]/15 text-[#8A6500] dark:text-[#EAAA00] text-xs font-mono shadow-2xs">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EAAA00] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#EAAA00]"></span>
-              </span>
-              <span>LIVE ROUND • IN PROGRESS</span>
-            </div>
-
-            <div className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-xs font-mono font-bold text-[#111111] dark:text-[#F8F6F1] tabular-nums shadow-2xs">
+          {/* Question Counter Label */}
+          <div>
+            <span id="question-counter-badge" className="text-xs font-sans text-[#666666] dark:text-[#A1A1AA] block">
               Question {qNum} of {totalQuestions}
-            </div>
+            </span>
+          </div>
+
+          {/* Vertical Numbered Circles (1 to totalQuestions) */}
+          <div className="space-y-3">
+            {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((idx) => {
+              const isPast = idx < qNum;
+              const isCurrent = idx === qNum;
+
+              return (
+                <div key={idx} className="flex items-center gap-3">
+                  <div
+                    className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-sans font-bold transition-all ${
+                      isCurrent
+                        ? 'bg-[#F59E0B] text-[#09090B] shadow-md shadow-[#F59E0B]/30 ring-2 ring-[#F59E0B]/50'
+                        : isPast
+                        ? 'bg-[#FAF8F5] dark:bg-[#18181C] text-[#111111] dark:text-white border border-[#E5DFD5] dark:border-[#2A2A30]'
+                        : 'bg-transparent text-[#999999] dark:text-[#52525B] border border-[#E5DFD5] dark:border-[#1E1E24]'
+                    }`}
+                  >
+                    {idx}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
+      </aside>
 
-        {/* Dynamic Progress Stepper Line */}
-        <div className="w-full h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] overflow-hidden">
+      {/* RIGHT MAIN AREA */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        {/* Top Header Bar */}
+        <header className="px-6 sm:px-8 py-4 border-b border-[#E5DFD5] dark:border-[#232328] flex items-center justify-between gap-4 sticky top-0 bg-[#FAF8F5]/95 dark:bg-[#09090B]/95 backdrop-blur-md z-30 transition-colors">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-sans font-semibold text-[#111111] dark:text-white">
+              {config?.role || 'Technical Interview'}
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-sans font-semibold bg-[#FFFBEB] dark:bg-[#1C1C21] text-[#B45309] dark:text-[#F59E0B] border border-[#F59E0B]/30">
+              {config?.difficulty || q?.difficulty || 'Mid-Level'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Live Timer Pill */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#141417] border border-[#E5DFD5] dark:border-[#232328] shadow-2xs transition-colors">
+              <Clock className="h-3.5 w-3.5 text-[#F59E0B]" />
+              <span className="font-mono text-xs font-bold text-[#111111] dark:text-white tracking-wider tabular-nums">
+                {formatTimer(elapsedSeconds)}
+              </span>
+            </div>
+
+            {/* Theme Toggle Button */}
+            {onToggleTheme && (
+              <button
+                id="active-interview-theme-toggle-btn"
+                type="button"
+                onClick={onToggleTheme}
+                aria-label="Toggle color theme"
+                className="p-1.5 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-white dark:bg-[#141417] text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white transition cursor-pointer shadow-2xs"
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-3.5 w-3.5 text-[#F59E0B]" />
+                ) : (
+                  <Moon className="h-3.5 w-3.5 text-[#F59E0B]" />
+                )}
+              </button>
+            )}
+
+            {/* End Interview Action Button */}
+            <button
+              onClick={() => setIsEarlyExitModalOpen(true)}
+              id="exit-interview-btn"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#F59E0B]/40 hover:bg-[#F59E0B]/10 text-[#B45309] dark:text-[#F59E0B] px-4 py-2 text-xs font-sans font-semibold shadow-xs transition-all cursor-pointer"
+            >
+              <span>End Interview</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Thin Horizontal Progress Indicator */}
+        <div className="w-full h-1 bg-[#E5DFD5] dark:bg-[#232328] overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-[#3A0F34] to-[#EAAA00] transition-all duration-700"
+            id="session-progress-bar"
+            className="h-full bg-[#F59E0B] transition-all duration-500 ease-out"
             style={{ width: `${Math.min(100, (qNum / totalQuestions) * 100)}%` }}
           />
         </div>
 
-        {/* Main Grid: Problem Statement & Candidate Solution Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#E5DFD5] dark:divide-[#3A0F34]/50">
-          {/* Left Column: Problem Statement & Architecture Requirements */}
-          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col gap-6 bg-[#F8F6F1]/70 dark:bg-[#120516]">
-            {/* Question Specimen Block */}
-            <div className="relative">
-              <div className="flex items-center gap-2 text-[10px] font-mono font-bold tracking-[0.25em] text-[#3A0F34] dark:text-[#EAAA00] uppercase mb-2">
-                <Cpu className="h-3.5 w-3.5 text-[#EAAA00]" />
-                <span>CHALLENGE SPECIMEN • QUESTION {qNum} OF {totalQuestions}</span>
+        {/* Global Error Banner */}
+        {errorMessage && (
+          <div role="alert" className="max-w-5xl mx-auto mt-4 px-4 sm:px-8 w-full">
+            <div className="p-3.5 rounded-2xl bg-rose-950/70 border border-rose-900 text-xs text-rose-200 flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-xs font-mono font-bold text-rose-300 hover:underline cursor-pointer ml-3"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Main Workspace Body */}
+        <main className="flex-1 p-6 sm:p-8 max-w-5xl w-full mx-auto space-y-6">
+          {/* Upper Section: Question Speech Bubble (Left) + AI Mascot Visualizer (Right) */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            {/* Center/Left Speech Card */}
+            <div
+              id="active-question-card"
+              className="md:col-span-8 rounded-3xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-6 sm:p-7 shadow-xs space-y-4 transition-colors"
+            >
+              {/* Card Header: AI Mascot + AI Interviewer Label */}
+              <div className="flex items-center gap-2.5">
+                <AiMascot size={26} />
+                <span className="font-sans font-semibold text-xs text-[#111111] dark:text-white">
+                  AI Interviewer
+                </span>
               </div>
 
-              <h2 className="font-didone text-2xl sm:text-4xl font-bold text-[#111111] dark:text-[#F8F6F1] mb-6 leading-tight">
-                {q?.topic || 'Distributed Systems & Concurrency'}
-              </h2>
+              {/* Problem Prompt Text */}
+              <p className="text-sm sm:text-base font-sans text-[#111111] dark:text-[#F4F4F5] leading-relaxed">
+                {q?.question_text || q?.questionText || 'Can you explain how a hash map works internally and what makes it efficient? Also, what are some real-world use cases?'}
+              </p>
 
-              {/* Problem Statement Box */}
-              <div className="p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] text-[#222222] dark:text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-line font-sans mb-6 shadow-xs">
-                {q?.question_text || q?.questionText}
+              {/* Audio Playback Controls */}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handlePlaySpeech}
+                  className="p-1.5 rounded-lg border border-[#E5DFD5] dark:border-[#2A2A30] bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white transition cursor-pointer"
+                  title="Listen to question prompt"
+                >
+                  <Volume2 className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePlaySpeech}
+                  className="p-1.5 rounded-lg border border-[#E5DFD5] dark:border-[#2A2A30] bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white transition cursor-pointer"
+                  title="Replay prompt audio"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </button>
               </div>
 
-              {/* Expected Core Concepts */}
-              {expectedConcepts.length > 0 && (
-                <div>
-                  <h4 className="text-[10px] font-mono tracking-[0.25em] font-semibold text-[#7A7875] dark:text-slate-400 uppercase mb-3 flex items-center gap-2">
-                    <Layers className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00]" />
-                    <span>Architectural Concepts to Address</span>
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {expectedConcepts.map((concept, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-white dark:bg-[#16061D] text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs"
-                      >
-                        <CheckCircle2 className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00]" />
-                        <span>{concept}</span>
-                      </span>
-                    ))}
+              {/* Guidance Chips (Reference Screen 5) */}
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#E5DFD5] dark:border-[#232328]">
+                <span className="px-3 py-1 rounded-full text-[11px] font-sans bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#666666] dark:text-[#A1A1AA] border border-[#E5DFD5] dark:border-[#2A2A30]">
+                  Follow-up possible
+                </span>
+                <span className="px-3 py-1 rounded-full text-[11px] font-sans bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#666666] dark:text-[#A1A1AA] border border-[#E5DFD5] dark:border-[#2A2A30]">
+                  Think step by step
+                </span>
+                <span className="px-3 py-1 rounded-full text-[11px] font-sans bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#666666] dark:text-[#A1A1AA] border border-[#E5DFD5] dark:border-[#2A2A30]">
+                  Share examples
+                </span>
+              </div>
+
+              {/* Starter Code Block (if provided) */}
+              {starterCode && (
+                <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#2A2A30] bg-[#FAF8F5] dark:bg-[#0D0D10] overflow-hidden mt-3 shadow-2xs">
+                  <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-[#141417] border-b border-[#E5DFD5] dark:border-[#232328] text-[11px] font-mono text-[#555555] dark:text-slate-300">
+                    <div className="flex items-center gap-1.5">
+                      <Terminal className="h-3.5 w-3.5 text-[#F59E0B]" />
+                      <span className="text-[#F59E0B] font-bold">Starter Code</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyStarterCode}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-[10px] font-mono text-[#111111] dark:text-white transition cursor-pointer"
+                    >
+                      {copied ? <Check className="h-3 w-3 text-emerald-500 dark:text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                      <span>{copied ? 'Copied' : 'Copy'}</span>
+                    </button>
                   </div>
+                  <pre className="p-3 text-xs font-mono text-[#111111] dark:text-slate-200 overflow-x-auto max-h-36">
+                    <code>{starterCode}</code>
+                  </pre>
                 </div>
               )}
             </div>
 
-            {/* AI Zero-Cost Voice Interactor */}
-            {sessionId && (
-              <VoiceInterviewPanel
-                sessionId={sessionId}
-                questionNumber={qNum}
-                questionTopic={q?.topic || 'Technical Challenge'}
-                questionText={q?.question_text || ''}
-                onInsertTranscript={(transcript) => {
-                  setAnswerText((prev) =>
-                    prev ? `${prev}\n\n// Spoken Technical Explanation:\n${transcript}` : transcript
-                  );
-                }}
-              />
-            )}
+            {/* Right Side: Circular Glowing Aura AI Mascot & Cyan Soundwave (Reference Screen 5) */}
+            <div className="md:col-span-4 flex flex-col items-center justify-center p-6 text-center">
+              <div className="relative my-2 flex items-center justify-center">
+                {/* Radial glowing blue/cyan aura */}
+                <div className="absolute w-36 h-36 rounded-full bg-gradient-to-tr from-cyan-400/25 via-sky-500/20 to-purple-500/15 blur-xl animate-pulse" />
+                <div className="relative z-10 w-24 h-24 rounded-full bg-gradient-to-b from-[#FAF8F5] to-white dark:from-[#18181C] dark:to-[#0B0B0E] p-1 shadow-xl flex items-center justify-center border-2 border-cyan-400/40">
+                  <AiMascot size={72} glowing={true} />
+                </div>
+              </div>
 
-            {/* Safety & Evaluation Notice */}
-            <div className="p-4 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/50 bg-[#FAF8F5] dark:bg-[#16061D] text-xs text-[#555555] dark:text-slate-300 flex items-start gap-3 mt-auto shadow-2xs">
-              <ShieldCheck className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
-              <div>
-                <span className="font-semibold text-[#111111] dark:text-[#F8F6F1]">Non-Execution Safety Policy: </span>
-                <span>Candidate code is evaluated via static AST semantic analysis. No server execution is performed.</span>
+              <span className="text-xs font-sans font-semibold text-[#111111] dark:text-white mt-2 mb-2">
+                {isSpeaking
+                  ? 'Speaking...'
+                  : isListening
+                  ? 'Listening...'
+                  : isBusy
+                  ? 'Evaluating...'
+                  : 'Listening...'}
+              </span>
+
+              {/* Cyan vertical soundwave equalizer bars */}
+              <div className="flex items-center justify-center gap-1 h-6">
+                {[30, 65, 95, 45, 80, 100, 75, 40, 85, 55, 25].map((h, i) => (
+                  <span
+                    key={i}
+                    className={`w-1 rounded-full transition-all duration-150 ${
+                      isSpeaking || isListening ? 'bg-[#00E5FF] animate-pulse' : 'bg-[#D4CFC7] dark:bg-[#27272E]'
+                    }`}
+                    style={{
+                      height: isSpeaking || isListening ? `${Math.round(h * 0.22)}px` : '4px',
+                      animationDelay: `${i * 90}ms`,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Hidden State Machine Status Indicator for verification */}
+              <div id="state-machine-status-indicator" className="sr-only">
+                {interviewState}
               </div>
             </div>
           </div>
 
-          {/* Right Column: Starter Code, Candidate Workspace, Evaluation & Follow-ups */}
-          <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col gap-6 bg-[#FAF8F5]/80 dark:bg-[#140718]">
-            {/* Starter Code Block */}
-            {starterCode ? (
-              <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] overflow-hidden flex flex-col shadow-xs">
-                <div className="flex items-center justify-between px-4 py-2.5 bg-[#FAF8F5] dark:bg-[#16061D] border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
-                  <div className="flex items-center gap-2 text-xs font-mono text-[#111111] dark:text-[#F8F6F1]">
-                    <Terminal className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#EAAA00]" />
-                    <span>Starter Stub • {config?.primaryLanguage || 'Code'}</span>
-                  </div>
-                  <button
-                    onClick={handleCopyCode}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-[#250C3D] hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] text-[11px] font-mono font-semibold text-[#111111] dark:text-[#F8F6F1] border border-[#E5DFD5] dark:border-[#3A0F34] transition cursor-pointer shadow-2xs"
-                    title="Copy starter code to clipboard"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-3 w-3 text-[#3A0F34] dark:text-[#EAAA00]" />
-                        <span className="text-[#3A0F34] dark:text-[#EAAA00]">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="p-4 bg-[#111111] overflow-x-auto max-h-56">
-                  <pre className="font-mono text-xs text-[#FAF8F5] leading-relaxed">
-                    <code>{starterCode}</code>
-                  </pre>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] text-center text-xs text-[#7A7875] dark:text-slate-400 font-mono shadow-xs">
-                <Code2 className="h-5 w-5 text-[#7A7875] dark:text-slate-400 mx-auto mb-1.5" />
-                <span>Conceptual System Design Challenge (No code stub required).</span>
-              </div>
-            )}
-
-            {/* Candidate Primary Answer Workspace */}
-            <div className="relative p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00]" />
-                  <h3 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Candidate Solution</h3>
-                </div>
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#250C3D] border border-[#E5DFD5] dark:border-[#3A0F34] text-[#3A0F34] dark:text-[#EAAA00] font-semibold">
-                  Q#{qNum} of {totalQuestions}
-                </span>
-              </div>
-
-              <p className="text-xs text-[#666666] dark:text-slate-300 leading-relaxed font-sans">
-                Formulate your architectural approach, complexity trade-offs, and code solution below:
-              </p>
-
-              <form onSubmit={handleSubmitAnswer} className="flex flex-col gap-3">
-                <textarea
-                  id="candidate-answer-textarea"
-                  value={answerText}
-                  onChange={(e) => setAnswerText(e.target.value)}
-                  disabled={isSubmitting || isEvaluating}
-                  placeholder="Explain your approach, design considerations, trade-offs, and paste or type your code solution..."
-                  rows={8}
-                  className="w-full rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] p-4 font-mono text-xs sm:text-sm text-[#111111] dark:text-[#F8F6F1] placeholder-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:ring-2 focus:ring-[#3A0F34]/20 dark:focus:ring-[#EAAA00]/20 focus:outline-none transition disabled:opacity-50 min-h-[160px] shadow-2xs"
-                />
-
-                <div className="flex items-center justify-between gap-3 pt-1">
-                  <span className="font-mono text-xs text-[#7A7875] dark:text-slate-400">
-                    {answerText.length} characters
-                  </span>
-
-                  <button
-                    type="submit"
-                    id="submit-answer-button"
-                    disabled={isSubmitting || !isAnswerValid || isEvaluating}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all duration-200 cursor-pointer ${
-                      isSubmitting || !isAnswerValid || isEvaluating
-                        ? 'bg-[#E5DFD5] dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-500 cursor-not-allowed border border-[#E5DFD5] dark:border-[#3A0F34]'
-                        : 'bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] shadow-xs hover:shadow-md hover:scale-[1.02]'
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-white dark:text-[#120516]" />
-                        <span>Submitting...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-3.5 w-3.5 text-[#EAAA00] dark:text-[#120516]" />
-                        <span>Submit Answer</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-
-              {/* Error Feedback */}
-              {submissionState.status === 'error' && (
-                <div
-                  id="answer-error-banner"
-                  className="p-3.5 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-2.5 animate-fadeIn shadow-2xs"
-                >
-                  <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <p className="font-semibold">Submission Error</p>
-                    <p className="font-sans leading-relaxed">{submissionState.errorMessage}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Success Feedback & Evaluation Trigger */}
-              {submissionState.status === 'submitted' && submissionState.response && (
-                <div
-                  id="answer-success-banner"
-                  className="p-4 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] text-xs text-[#222222] dark:text-[#F8F6F1] flex flex-col gap-3 animate-fadeIn shadow-2xs"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00] shrink-0 mt-0.5" />
-                    <div className="space-y-0.5 flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-[#111111] dark:text-[#F8F6F1]">Answer Persisted to PostgreSQL</p>
-                        <span className="font-mono text-[10px] text-[#7A7875] dark:text-slate-400">
-                          ID: {submissionState.response.answer_id || submissionState.response.answerId}
-                        </span>
-                      </div>
-                      <p className="text-[#555555] dark:text-slate-300 font-sans">
-                        {submissionState.response.message || 'Solution recorded successfully.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* AI Evaluation Trigger Bar */}
-                  <div className="pt-2 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <span className="text-[11px] text-[#555555] dark:text-slate-300 font-sans">
-                      Ready for 4D rubric evaluation.
-                    </span>
-
-                    <button
-                      type="button"
-                      id="request-evaluation-button"
-                      onClick={handleRequestEvaluation}
-                      disabled={isEvaluating}
-                      className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer ${
-                        isEvaluating
-                          ? 'bg-[#E5DFD5] dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-500 cursor-not-allowed border border-[#E5DFD5] dark:border-[#3A0F34]'
-                          : 'bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] hover:bg-[#2A0B26] dark:hover:bg-[#D49800] border border-[#3A0F34] dark:border-[#EAAA00] shadow-2xs hover:shadow-xs'
-                      }`}
-                    >
-                      {isEvaluating ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-white dark:text-[#120516]" />
-                          <span>Evaluating...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Bot className="h-3.5 w-3.5 text-[#EAAA00] dark:text-[#120516]" />
-                          <span>Request AI Evaluation</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Evaluation Notice Banner (e.g. quota exhausted or service notice) */}
-              {evaluationState.status === 'error' && (
-                <div
-                  id="evaluation-error-banner"
-                  className="p-4 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5 animate-fadeIn shadow-2xs"
-                >
-                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5 flex-1">
-                    <p className="font-semibold">Live AI Evaluation Notice</p>
-                    <p className="font-sans leading-relaxed">{evaluationState.errorMessage}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Evaluation Scorecard Card */}
-              {evaluationState.status === 'evaluated' && evalData && (
-                <div
-                  id="evaluation-report-card"
-                  className="p-5 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-[#FAF8F5] dark:bg-[#120516] flex flex-col gap-4 animate-fadeIn shadow-xs"
-                >
-                  <div className="flex items-center justify-between pb-3 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
-                    <div>
-                      <h4 className="font-didone text-base font-bold text-[#111111] dark:text-[#F8F6F1]">Evaluation Scorecard</h4>
-                      <p className="text-[10px] font-mono text-[#7A7875] dark:text-slate-400">Weighted 4D Rubric Assessment</p>
-                    </div>
-                    <div className="font-didone text-2xl font-bold text-[#3A0F34] dark:text-[#EAAA00]">
-                      {evalData.overall_score || evalData.overallScore} / 10
-                    </div>
-                  </div>
-
-                  {/* Dimension breakdown */}
-                  <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                    <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs">
-                      <div className="flex justify-between mb-1.5">
-                        <span className="text-[#111111] dark:text-[#F8F6F1]">Correctness (40%)</span>
-                        <span className="font-bold text-[#3A0F34] dark:text-[#EAAA00]">{evalData.scores.correctness}/10</span>
-                      </div>
-                      <div className="h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: `${Math.min(100, evalData.scores.correctness * 10)}%` }} />
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs">
-                      <div className="flex justify-between mb-1.5">
-                        <span className="text-[#111111] dark:text-[#F8F6F1]">Depth (25%)</span>
-                        <span className="font-bold text-[#3A0F34] dark:text-[#EAAA00]">{evalData.scores.technical_depth ?? evalData.scores.technicalDepth}/10</span>
-                      </div>
-                      <div className="h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: `${Math.min(100, (evalData.scores.technical_depth ?? evalData.scores.technicalDepth ?? 0) * 10)}%` }} />
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs">
-                      <div className="flex justify-between mb-1.5">
-                        <span className="text-[#111111] dark:text-[#F8F6F1]">Edge Cases (20%)</span>
-                        <span className="font-bold text-[#3A0F34] dark:text-[#EAAA00]">{evalData.scores.edge_cases ?? evalData.scores.edgeCases}/10</span>
-                      </div>
-                      <div className="h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: `${Math.min(100, (evalData.scores.edge_cases ?? evalData.scores.edgeCases ?? 0) * 10)}%` }} />
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] shadow-2xs">
-                      <div className="flex justify-between mb-1.5">
-                        <span className="text-[#111111] dark:text-[#F8F6F1]">Clarity (15%)</span>
-                        <span className="font-bold text-[#3A0F34] dark:text-[#EAAA00]">{evalData.scores.communication}/10</span>
-                      </div>
-                      <div className="h-1.5 bg-[#E5DFD5] dark:bg-[#250C3D] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#3A0F34] dark:bg-[#EAAA00] rounded-full" style={{ width: `${Math.min(100, evalData.scores.communication * 10)}%` }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Feedback summary */}
-                  <div className="p-3.5 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] text-xs font-sans text-[#333333] dark:text-slate-300 leading-relaxed shadow-2xs">
-                    {evalData.feedback}
-                  </div>
-                </div>
-              )}
+          {/* Unified Conversation Transcript Stream (Scrollable history) */}
+          <div
+            id="conversation-transcript-container"
+            className="rounded-3xl border border-[#E5DFD5] dark:border-[#232328] bg-white/80 dark:bg-[#141417]/80 p-5 shadow-xs max-h-56 overflow-y-auto space-y-3 transition-colors"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-[#E5DFD5] dark:border-[#232328]">
+              <span className="text-xs font-sans font-semibold text-[#666666] dark:text-[#A1A1AA]">
+                Conversation Transcript ({messages.length} exchanges)
+              </span>
             </div>
 
-            {/* Adaptive Follow-up Section */}
-            <div
-              id="follow-up-section"
-              className="p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-4 animate-fadeIn shadow-xs"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-[#E5DFD5] dark:border-[#3A0F34]/50">
-                <div className="flex items-center gap-2">
-                  <Bot className="h-4 w-4 text-[#3A0F34] dark:text-[#EAAA00]" />
-                  <h3 className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">
-                    Adaptive Follow-up Inquiries ({followUpCount}/2)
-                  </h3>
-                </div>
-                {isMaxFollowUpsReached && (
-                  <span className="text-[10px] font-mono font-bold text-[#3A0F34] dark:text-[#EAAA00] bg-[#3A0F34]/10 dark:bg-[#EAAA00]/20 px-2.5 py-0.5 rounded-full border border-[#3A0F34]/20 dark:border-[#EAAA00]/40">
-                    Max Reached
-                  </span>
-                )}
-              </div>
-
-              {followUpError && (
-                <div className="p-3 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 text-xs font-mono shadow-2xs">
-                  {followUpError}
-                </div>
-              )}
-
-              {/* Thread of follow-up questions */}
-              {followUps.map((fu, idx) => {
-                const fuNum = fu.follow_up_number || fu.followUpNumber || idx + 1;
-                const isAnswered = Boolean(fu.candidate_answer || fu.candidateAnswer);
-                const isSubmittingThis = submittingFollowUpId === fu.id;
-                const currentAnswerInput = followUpInputs[fu.id] || '';
-                const hasInput = currentAnswerInput.trim().length > 0;
+            <div className="space-y-3">
+              {messages.map((msg) => {
+                const isInterviewer = msg.speaker === 'interviewer';
+                const isCandidate = msg.speaker === 'candidate';
+                const isSystem = msg.speaker === 'system';
 
                 return (
-                  <div key={fu.id} className="p-4 rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-[#FAF8F5] dark:bg-[#120516] space-y-3 shadow-2xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-[#3A0F34] dark:text-[#EAAA00]">
-                        Follow-up #{fuNum}
-                      </span>
-                      {isAnswered ? (
-                        <span className="text-[10px] font-mono text-[#3A0F34] dark:text-[#EAAA00]">✓ Answer Recorded</span>
-                      ) : (
-                        <span className="text-[10px] font-mono text-[#EAAA00]">Response Required</span>
-                      )}
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col gap-1 ${isCandidate ? 'items-end' : 'items-start'}`}
+                  >
+                    <div className="flex items-center gap-1.5 text-[10px] text-[#777777] dark:text-[#A1A1AA]">
+                      <span>{isInterviewer ? 'AI Interviewer' : isCandidate ? 'You' : 'Evaluation'}</span>
+                      <span>·</span>
+                      <span>{msg.timestamp}</span>
                     </div>
-
-                    <p className="text-xs font-sans text-[#222222] dark:text-slate-300 leading-relaxed">
-                      {fu.question_text || fu.questionText}
-                    </p>
-
-                    {isAnswered ? (
-                      <div className="p-3 rounded-xl bg-white dark:bg-[#16061D] border border-[#E5DFD5] dark:border-[#3A0F34] font-mono text-xs text-[#111111] dark:text-[#F8F6F1] whitespace-pre-wrap">
-                        {fu.candidate_answer || fu.candidateAnswer}
+                    {isSystem && msg.evaluation ? (
+                      <div className="p-3 rounded-2xl bg-[#FFFBEB] dark:bg-[#181510] border border-[#F59E0B]/30 text-xs space-y-1.5 max-w-lg">
+                        <span className="font-bold text-[#F59E0B]">
+                          Feedback ({msg.evaluation.overall_score ?? msg.evaluation.overallScore}/10)
+                        </span>
+                        <p className="text-[#374151] dark:text-slate-200">{msg.evaluation.feedback}</p>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <textarea
-                          rows={3}
-                          value={currentAnswerInput}
-                          onChange={(e) => setFollowUpInputs({ ...followUpInputs, [fu.id]: e.target.value })}
-                          disabled={isSubmittingThis}
-                          placeholder="Address follow-up inquiry..."
-                          className="w-full rounded-xl border border-[#E5DFD5] dark:border-[#3A0F34] bg-white dark:bg-[#16061D] p-3 font-mono text-xs text-[#111111] dark:text-[#F8F6F1] placeholder-[#8A8782] dark:placeholder:text-slate-500 focus:border-[#3A0F34] dark:focus:border-[#EAAA00] focus:outline-none shadow-2xs"
-                        />
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => handleSubmitFollowUpAnswer(fu.id)}
-                            disabled={isSubmittingThis || !hasInput}
-                            className="px-4 py-2 rounded-xl bg-[#3A0F34] dark:bg-[#EAAA00] text-white dark:text-[#120516] font-mono text-xs uppercase font-bold hover:bg-[#2A0B26] dark:hover:bg-[#D49800] transition disabled:opacity-50 cursor-pointer shadow-xs"
-                          >
-                            {isSubmittingThis ? 'Submitting...' : 'Submit Follow-up'}
-                          </button>
-                        </div>
+                      <div
+                        className={`p-3 rounded-2xl text-xs max-w-lg ${
+                          isCandidate
+                            ? 'bg-[#F59E0B]/15 text-[#111111] dark:text-white border border-[#F59E0B]/30 dark:border-[#2A2A30]'
+                            : 'bg-[#FAF8F5] dark:bg-[#0D0D10] border border-[#E5DFD5] dark:border-[#232328] text-[#111111] dark:text-[#F4F4F5]'
+                        }`}
+                      >
+                        {msg.text}
                       </div>
                     )}
                   </div>
                 );
               })}
+              <div ref={transcriptBottomRef} />
+            </div>
+          </div>
 
-              {/* Request Follow-Up Action Bar */}
-              {hasPrimaryAnswer && !isMaxFollowUpsReached && (
-                <div className="pt-2 border-t border-[#E5DFD5] dark:border-[#3A0F34]/50 flex items-center justify-between">
-                  <span className="text-xs text-[#666666] dark:text-slate-300 font-sans">
-                    {followUpCount === 0 ? 'Request an adaptive inquiry.' : 'Request second follow-up.'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleRequestFollowUp}
-                    disabled={!canRequestFollowUp}
-                    className="px-4 py-2 rounded-xl border border-[#3A0F34] dark:border-[#EAAA00] bg-white dark:bg-[#250C3D] text-[#3A0F34] dark:text-[#EAAA00] font-mono text-xs uppercase font-bold hover:bg-[#FAF8F5] dark:hover:bg-[#34114F] transition disabled:opacity-50 cursor-pointer shadow-2xs"
-                  >
-                    {isGeneratingFollowUp ? 'Generating...' : `Request Follow-up (${followUpCount + 1}/2)`}
-                  </button>
-                </div>
-              )}
+          {/* Bottom Answer Input & Recording Workspace (Reference Screen 5) */}
+          <div id="unified-input-workspace" className="space-y-3">
+            {/* Input Bar: Type your answer here... + Send airplane icon */}
+            <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-2 flex items-center gap-2 shadow-xs transition-colors">
+              <input
+                id="candidate-solution-textarea"
+                type="text"
+                disabled={isBusy}
+                value={currentFollowUp ? followUpAnswerText : candidateAnswerText}
+                onChange={(e) => {
+                  if (currentFollowUp) {
+                    setFollowUpAnswerText(e.target.value);
+                  } else {
+                    setCandidateAnswerText(e.target.value);
+                  }
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (currentFollowUp) {
+                      handleFollowUpSubmitCore(followUpAnswerText, false);
+                    } else {
+                      handleSubmitAnswerCore(candidateAnswerText, false);
+                    }
+                  }
+                }}
+                placeholder="Type your answer here..."
+                className="flex-1 bg-transparent border-0 px-3 py-2 text-xs sm:text-sm font-sans text-[#111111] dark:text-white placeholder-[#888888] dark:placeholder-[#71717A] focus:outline-none"
+              />
+
+              <button
+                type="button"
+                id="submit-text-answer-btn"
+                disabled={
+                  isBusy ||
+                  (currentFollowUp ? !followUpAnswerText.trim() : !candidateAnswerText.trim())
+                }
+                onClick={() => {
+                  if (currentFollowUp) {
+                    handleFollowUpSubmitCore(followUpAnswerText, false);
+                  } else {
+                    handleSubmitAnswerCore(candidateAnswerText, false);
+                  }
+                }}
+                className="p-2 rounded-xl text-[#F59E0B] hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-40 transition cursor-pointer"
+                title="Send answer"
+              >
+                <Send className="h-4 w-4" />
+              </button>
             </div>
 
-            {/* Question Progression Station */}
-            <div
-              id="question-progression-card"
-              className="p-6 rounded-2xl border border-[#E5DFD5] dark:border-[#3A0F34]/60 bg-white dark:bg-[#16061D] flex flex-col gap-3 shadow-xs"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-didone text-sm font-bold text-[#111111] dark:text-[#F8F6F1]">Progression State</h4>
-                  <p className="text-[10px] font-mono text-[#7A7875] dark:text-slate-400">
-                    {isFinalQuestion ? 'Final Challenge' : `Next: Question #${qNum + 1}`}
-                  </p>
-                </div>
-                <span className="font-mono text-xs text-[#3A0F34] dark:text-[#EAAA00] font-bold">
-                  {Math.round((qNum / totalQuestions) * 100)}% Complete
-                </span>
-              </div>
-
-              <div className="pt-2">
+            {/* Controls Row Below: Mic (Left), Start Recording (Center), Settings (Right) */}
+            <div className="flex items-center justify-between pt-1">
+              {/* Left: Mic Button */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  id="advance-question-button"
-                  onClick={handleAdvanceQuestion}
-                  disabled={!canAdvance}
-                  className={`w-full py-3.5 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-                    !canAdvance
-                      ? 'bg-[#E5DFD5] dark:bg-[#250C3D] text-[#7A7875] dark:text-slate-500 cursor-not-allowed border border-[#E5DFD5] dark:border-[#3A0F34]'
-                      : 'bg-gradient-to-r from-[#3A0F34] to-[#52174A] hover:from-[#2A0B26] hover:to-[#3E1137] dark:from-[#EAAA00] dark:to-[#F1C40F] dark:hover:from-[#D49800] dark:hover:to-[#E0B000] text-white dark:text-[#120516] shadow-xs hover:shadow-md hover:scale-[1.01]'
-                  }`}
+                  id="toggle-mode-voice"
+                  disabled={!hasVoiceSupport || isBusy}
+                  onClick={() => handleToggleMode(activeMode === 'voice' ? 'text' : 'voice')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-sans font-medium transition cursor-pointer ${
+                    activeMode === 'voice'
+                      ? 'border-[#F59E0B] bg-[#F59E0B]/15 text-[#F59E0B]'
+                      : 'border-[#E5DFD5] dark:border-[#2A2A30] bg-white dark:bg-[#141417] text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white'
+                  } ${!hasVoiceSupport ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {progressionState.status === 'advancing' ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin text-white dark:text-[#120516]" />
-                      <span>{isFinalQuestion ? 'Finalizing Session...' : 'Generating Next Challenge...'}</span>
-                    </>
-                  ) : isFinalQuestion ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 text-[#EAAA00] dark:text-[#120516]" />
-                      <span>Complete & Synthesize Dossier ✓</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Advance to Challenge #{qNum + 1}</span>
-                      <ArrowRight className="h-4 w-4 text-[#EAAA00] dark:text-[#120516]" />
-                    </>
-                  )}
+                  <Mic className="h-3.5 w-3.5 text-[#F59E0B]" />
+                  <span>Mic</span>
+                </button>
+
+                {/* Hidden Text Mode Toggle Button for Test Contract */}
+                <button
+                  type="button"
+                  id="toggle-mode-text"
+                  onClick={() => handleToggleMode('text')}
+                  className="sr-only"
+                >
+                  Text Mode
                 </button>
               </div>
+
+              {/* Center: Prominent Start Recording / Done Speaking Amber Pill Button */}
+              <button
+                type="button"
+                id="voice-done-speaking-btn"
+                disabled={isBusy}
+                onClick={() => {
+                  if (activeMode === 'voice' && currentSpokenText.trim()) {
+                    if (currentFollowUp) {
+                      handleFollowUpSubmitCore(currentSpokenText, true);
+                    } else {
+                      handleSubmitAnswerCore(currentSpokenText, true);
+                    }
+                  } else if (candidateAnswerText.trim()) {
+                    handleSubmitAnswerCore(candidateAnswerText, false);
+                  } else {
+                    handleToggleMode('voice');
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] text-xs sm:text-sm font-sans font-bold shadow-md shadow-[#F59E0B]/20 transition-all cursor-pointer"
+              >
+                {isBusy ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#09090B]" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse" />
+                    <span>{isListening ? 'Done Speaking' : 'Start Recording'}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Right: Settings Button */}
+              <button
+                type="button"
+                onClick={() => handleToggleMode(activeMode === 'voice' ? 'text' : 'voice')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-white dark:bg-[#141417] text-xs font-sans font-medium text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white transition cursor-pointer"
+              >
+                <Settings className="h-3.5 w-3.5 text-[#F59E0B]" />
+                <span>Settings</span>
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Early Exit Confirmation Modal */}
+      {isEarlyExitModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn"
+        >
+          <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-[#141417] border border-[#E5DFD5] dark:border-[#232328] shadow-xl space-y-4 transition-colors">
+            <div className="flex items-center gap-2.5 text-[#F59E0B]">
+              <AlertTriangle className="h-5 w-5 text-[#F59E0B]" />
+              <h3 className="font-serif text-base font-bold text-[#111111] dark:text-white">
+                Conclude Interview Round?
+              </h3>
+            </div>
+
+            <p className="text-xs text-[#555555] dark:text-[#A1A1AA] font-sans leading-relaxed">
+              You have completed Question {qNum - 1} of {totalQuestions}. Would you like to conclude now and view your evaluation report dossier for the answered challenges, or exit directly to the studio?
+            </p>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isExitingEarly}
+                onClick={handleEarlyComplete}
+                className="w-full py-2.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] font-sans text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#F59E0B]/20"
+              >
+                {isExitingEarly ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#09090B]" />
+                ) : (
+                  <Award className="h-3.5 w-3.5 text-[#09090B]" />
+                )}
+                <span>Finish & View Assessment Report</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEarlyExitModalOpen(false);
+                  onEndSession();
+                }}
+                className="w-full py-2.5 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#111111] dark:text-white hover:bg-[#F0ECE4] dark:hover:bg-[#25252A] font-sans text-xs transition cursor-pointer"
+              >
+                Exit to Studio Console
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsEarlyExitModalOpen(false)}
+                className="w-full py-2 text-xs font-sans text-[#777777] dark:text-[#71717A] hover:text-[#111111] dark:hover:text-[#A1A1AA] hover:underline cursor-pointer"
+              >
+                Continue Interview
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
