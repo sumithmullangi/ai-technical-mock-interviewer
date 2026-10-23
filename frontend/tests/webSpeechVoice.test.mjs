@@ -508,3 +508,70 @@ test('WebSpeechVoiceSession start(true) skips greeting utterance and immediately
 
   session.cleanup();
 });
+
+test('WebSpeechVoiceSession accumulates candidate speech across multiple sentences and exposes getCandidateAccumulatedSpeech', async () => {
+  const env = createMockWindowEnvironment({
+    hasRecognition: true,
+    hasSynthesis: true,
+  });
+  setMockGlobals(env);
+
+  let interimCaptured = null;
+  const session = new WebSpeechVoiceSession(
+    'sess-accumulate',
+    1,
+    'Explain Hash Maps',
+    'Data Structures',
+    {
+      onStatusChange: () => {},
+      onTranscriptUpdate: () => {},
+      onError: () => {},
+      onCandidateInterim: (text) => {
+        interimCaptured = text;
+      },
+    }
+  );
+
+  await session.start(true);
+  const rec = env.getRecognitionInstance();
+
+  // Candidate says sentence 1
+  rec.onresult({
+    results: [
+      {
+        isFinal: false,
+        0: { transcript: 'I would use a hash map for O(1) lookups.' },
+        length: 1,
+      },
+    ],
+  });
+  assert.equal(interimCaptured, 'I would use a hash map for O(1) lookups.');
+
+  // Sentence 1 finalizes
+  rec.onresult({
+    results: [
+      {
+        isFinal: true,
+        0: { transcript: 'I would use a hash map for O(1) lookups.' },
+        length: 1,
+      },
+    ],
+  });
+
+  // Candidate continues with sentence 2 (e.g. after a brief pause)
+  rec.onresult({
+    results: [
+      {
+        isFinal: true,
+        0: { transcript: 'For collisions, separate chaining or open addressing can be used.' },
+        length: 1,
+      },
+    ],
+  });
+
+  const accumulated = session.getCandidateAccumulatedSpeech();
+  assert.match(accumulated, /I would use a hash map for O\(1\) lookups\./);
+  assert.match(accumulated, /For collisions, separate chaining or open addressing can be used\./);
+
+  session.cleanup();
+});

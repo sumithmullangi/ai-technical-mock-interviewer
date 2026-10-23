@@ -3,9 +3,6 @@ import {
   ArrowRight,
   Play,
   CheckCircle2,
-  Sparkles,
-  Mic,
-  BarChart3,
   X,
 } from 'lucide-react';
 

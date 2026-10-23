@@ -58,6 +58,9 @@ class UserResponse(BaseModel):
     id: str
     email: str
     full_name: str
+    target_role: Optional[str] = None
+    experience_level: Optional[str] = None
+    preferences: Optional[dict] = Field(default_factory=dict)
     is_active: bool = True
     is_verified: bool = False
     created_at: datetime
@@ -73,6 +76,48 @@ class UserResponse(BaseModel):
     @classmethod
     def default_is_active(cls, v: Any) -> bool:
         return bool(v) if v is not None else True
+
+
+class UserUpdateRequest(BaseModel):
+    """Schema for candidate profile and preferences update."""
+    full_name: Optional[str] = Field(None, min_length=2, max_length=100, description="Updated full name")
+    target_role: Optional[str] = Field(None, max_length=100, description="Preferred professional role")
+    experience_level: Optional[str] = Field(None, max_length=50, description="Target experience level")
+    preferences: Optional[dict] = Field(None, description="Application preferences")
+
+    @field_validator("full_name")
+    @classmethod
+    def validate_full_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            clean = v.strip()
+            if len(clean) < 2:
+                raise ValueError("Full name must be at least 2 characters long")
+            return clean
+        return v
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for candidate password change."""
+    current_password: str = Field(..., min_length=1, description="Current account password")
+    new_password: str = Field(..., min_length=8, max_length=128, description="New account password")
+    confirm_password: str = Field(..., min_length=8, max_length=128, description="Confirm new password")
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not re.search(r"[A-Za-z]", v):
+            raise ValueError("Password must contain at least one letter")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("Password must contain at least one digit or number")
+        return v
+
+    @model_validator(mode="after")
+    def verify_passwords_match(self) -> "ChangePasswordRequest":
+        if self.new_password != self.confirm_password:
+            raise ValueError("New passwords do not match")
+        return self
 
 
 class AuthTokenResponse(BaseModel):

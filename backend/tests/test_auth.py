@@ -437,3 +437,140 @@ def test_guest_session_backward_compatibility(mock_db_session):
     assert response.status_code == 200
     assert response.json()["session_id"] == "mock-guest-sess"
     assert response.json()["user_id"] is None
+
+
+def test_update_user_profile_and_preferences(mock_db_session):
+    """Verify authenticated user can update full_name, target_role, experience_level, and preferences."""
+    user = UserModel(
+        id="usr-profile-test",
+        email="profile@example.com",
+        full_name="Original Name",
+        hashed_password="hash",
+        target_role="Frontend Developer",
+        experience_level="Junior",
+        preferences={"theme": "dark"},
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    sess = UserSessionModel(
+        id="sess-profile-1",
+        user_id="usr-profile-test",
+        token_hash=hash_token("token-profile-test"),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        created_at=datetime.now(timezone.utc),
+    )
+    sess.user = user
+
+    auth_res = MagicMock()
+    auth_res.scalar_one_or_none.return_value = sess
+    mock_db_session.execute = AsyncMock(return_value=auth_res)
+
+    headers = {"Authorization": "Bearer token-profile-test"}
+    update_payload = {
+        "full_name": "Updated Name",
+        "target_role": "Backend Engineer (Distributed Systems)",
+        "experience_level": "Senior",
+        "preferences": {"theme": "light", "default_mode": "voice", "question_count": 5},
+    }
+
+    response = client.patch("/api/v1/auth/me", json=update_payload, headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["full_name"] == "Updated Name"
+    assert data["target_role"] == "Backend Engineer (Distributed Systems)"
+    assert data["experience_level"] == "Senior"
+    assert data["preferences"]["theme"] == "light"
+    assert data["preferences"]["default_mode"] == "voice"
+    assert data["preferences"]["question_count"] == 5
+    assert mock_db_session.commit.called
+
+
+def test_change_password_success(mock_db_session):
+    """Verify authenticated user can change password with valid current credentials."""
+    current_plain = "OriginalPassword123!"
+    user = UserModel(
+        id="usr-change-pwd",
+        email="pwd@example.com",
+        full_name="Password Changer",
+        hashed_password=hash_password(current_plain),
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    sess = UserSessionModel(
+        id="sess-pwd-1",
+        user_id="usr-change-pwd",
+        token_hash=hash_token("token-change-pwd"),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        created_at=datetime.now(timezone.utc),
+    )
+    sess.user = user
+
+    auth_res = MagicMock()
+    auth_res.scalar_one_or_none.return_value = sess
+    mock_db_session.execute = AsyncMock(return_value=auth_res)
+
+    headers = {"Authorization": "Bearer token-change-pwd"}
+    payload = {
+        "current_password": current_plain,
+        "new_password": "NewSecretPassword456!",
+        "confirm_password": "NewSecretPassword456!",
+    }
+
+    response = client.post("/api/v1/auth/change-password", json=payload, headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert "Password changed successfully" in data["message"]
+    assert verify_password("NewSecretPassword456!", user.hashed_password) is True
+    assert mock_db_session.commit.called
+
+
+def test_change_password_wrong_current_password_400(mock_db_session):
+    """Verify wrong current password returns 400 Bad Request."""
+    user = UserModel(
+        id="usr-change-pwd-fail",
+        email="pwdfail@example.com",
+        full_name="Password Changer",
+        hashed_password=hash_password("CorrectPassword123!"),
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    sess = UserSessionModel(
+        id="sess-pwd-2",
+        user_id="usr-change-pwd-fail",
+        token_hash=hash_token("token-change-pwd-2"),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        created_at=datetime.now(timezone.utc),
+    )
+    sess.user = user
+
+    auth_res = MagicMock()
+    auth_res.scalar_one_or_none.return_value = sess
+    mock_db_session.execute = AsyncMock(return_value=auth_res)
+
+    headers = {"Authorization": "Bearer token-change-pwd-2"}
+    payload = {
+        "current_password": "IncorrectPassword123!",
+        "new_password": "NewSecretPassword456!",
+        "confirm_password": "NewSecretPassword456!",
+    }
+
+    response = client.post("/api/v1/auth/change-password", json=payload, headers=headers)
+    assert response.status_code == 400
+    data = response.json()
+    assert "Current password is incorrect" in data["detail"]
+
+
+def test_v1_health_endpoint_accessibility():
+    """Verify both /api/health and /api/v1/health return 200 OK with operational status."""
+    r1 = client.get("/api/health")
+    assert r1.status_code == 200
+    assert r1.json()["status"] == "ok"
+
+    r2 = client.get("/api/v1/health")
+    assert r2.status_code == 200
+    assert r2.json()["status"] == "ok"
+

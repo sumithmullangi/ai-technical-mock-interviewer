@@ -195,21 +195,22 @@ export interface ProgressionState {
 export interface QuestionReportItemData {
   question_number: number;
   questionNumber?: number;
-  topic: string;
-  difficulty: string;
-  question_text: string;
+  title?: string;
+  topic?: string;
+  difficulty?: string;
+  question_text?: string;
   questionText?: string;
   starter_code?: string | null;
   starterCode?: string | null;
-  expected_concepts: string[];
+  expected_concepts?: string[];
   expectedConcepts?: string[];
-  is_answered: boolean;
+  is_answered?: boolean;
   isAnswered?: boolean;
   answer_text?: string | null;
   answerText?: string | null;
   submitted_at?: string | null;
   submittedAt?: string | null;
-  is_evaluated: boolean;
+  is_evaluated?: boolean;
   isEvaluated?: boolean;
   correctness_score?: number | null;
   correctnessScore?: number | null;
@@ -222,11 +223,12 @@ export interface QuestionReportItemData {
   overall_score?: number | null;
   overallScore?: number | null;
   feedback?: string | null;
-  strengths: string[];
-  missing_concepts: string[];
+  strengths?: string[];
+  weaknesses?: string[];
+  missing_concepts?: string[];
   missingConcepts?: string[];
-  suggestions: string[];
-  follow_ups: Array<{
+  suggestions?: string[];
+  follow_ups?: Array<{
     id: string;
     follow_up_number: number;
     followUpNumber?: number;
@@ -257,37 +259,38 @@ export interface ScoreBreakdownData {
 
 export interface InterviewReportData {
   status: string;
-  report_id: string;
+  report_id?: string;
   reportId?: string;
   session_id: string;
   sessionId?: string;
   role: string;
-  difficulty: string;
-  primary_language: string;
+  difficulty?: string;
+  primary_language?: string;
   primaryLanguage?: string;
-  total_questions: number;
+  total_questions?: number;
   totalQuestions?: number;
-  answered_questions: number;
+  answered_questions?: number;
   answeredQuestions?: number;
-  evaluated_questions: number;
+  evaluated_questions?: number;
   evaluatedQuestions?: number;
   scores: ScoreBreakdownData;
   overall_score?: number | null;
   overallScore?: number | null;
-  performance_rating: string;
+  performance_rating?: string;
   performanceRating?: string;
   summary_narrative: string;
   summaryNarrative?: string;
   strengths: string[];
-  improvement_areas: string[];
+  weaknesses?: string[];
+  improvement_areas?: string[];
   improvementAreas?: string[];
-  study_recommendations: string[];
+  study_recommendations?: string[];
   studyRecommendations?: string[];
   per_question_results: QuestionReportItemData[];
   perQuestionResults?: QuestionReportItemData[];
-  created_at: string;
+  created_at?: string;
   createdAt?: string;
-  updated_at: string;
+  updated_at?: string;
   updatedAt?: string;
 }
 

@@ -173,6 +173,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateProfile = async (data: {
+    full_name?: string;
+    target_role?: string;
+    experience_level?: string;
+    preferences?: import('../types/auth').UserPreferences;
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
+        method: 'PATCH',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        let msg = 'Failed to update profile.';
+        if (typeof resData.detail === 'string') {
+          msg = resData.detail;
+        } else if (Array.isArray(resData.detail) && resData.detail.length > 0) {
+          msg = resData.detail[0].msg || msg;
+        }
+        return { success: false, error: msg };
+      }
+
+      setUser(resData);
+      if (resData.preferences) {
+        try {
+          localStorage.setItem('mockinterview_preferences', JSON.stringify(resData.preferences));
+        } catch {}
+      }
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Unable to connect to profile server.',
+      };
+    }
+  };
+
+  const changePassword = async (data: {
+    current_password: string;
+    new_password: string;
+    confirm_password: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const res = await fetch(`${API_BASE}/api/v1/auth/change-password`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        let msg = 'Failed to change password.';
+        if (typeof resData.detail === 'string') {
+          msg = resData.detail;
+        } else if (Array.isArray(resData.detail) && resData.detail.length > 0) {
+          msg = resData.detail[0].msg || msg;
+        }
+        return { success: false, error: msg };
+      }
+
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Unable to connect to server.',
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -183,6 +270,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         refreshUser,
+        updateProfile,
+        changePassword,
       }}
     >
       {children}

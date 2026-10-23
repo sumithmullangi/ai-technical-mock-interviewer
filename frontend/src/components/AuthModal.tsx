@@ -8,7 +8,6 @@ import {
   EyeOff,
   CheckCircle2,
   AlertCircle,
-  ArrowRight,
   Loader2,
   KeyRound,
   ShieldCheck,

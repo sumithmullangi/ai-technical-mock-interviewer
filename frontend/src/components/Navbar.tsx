@@ -14,11 +14,13 @@ import {
   LogOut,
   History,
   ChevronDown,
+  User,
+  Settings,
 } from 'lucide-react';
 import type { HealthStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
 
-export type NavTab = 'landing' | 'dashboard' | 'console' | 'challenges' | 'workflow' | 'rubric' | 'sample-report' | 'architecture' | 'all';
+export type NavTab = 'landing' | 'dashboard' | 'console' | 'challenges' | 'workflow' | 'rubric' | 'sample-report' | 'architecture' | 'all' | 'settings' | 'profile';
 export type ThemeMode = 'light' | 'dark';
 
 interface NavbarProps {
@@ -309,14 +311,45 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                   <button
                     type="button"
+                    id="nav-user-dropdown-history"
                     onClick={() => {
                       setUserDropdownOpen(false);
-                      handleNavClick('dashboard');
+                      if (onOpenHistory) {
+                        onOpenHistory();
+                      } else {
+                        handleNavClick('dashboard');
+                      }
                     }}
                     className="w-full text-left px-3.5 py-2 hover:bg-white dark:hover:bg-[#18181C] flex items-center gap-2 text-[#111111] dark:text-slate-200 transition font-medium cursor-pointer"
                   >
                     <History className="h-3.5 w-3.5 text-[#2E0A24] dark:text-[#D48324]" />
                     <span>My Interviews & History</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="nav-user-dropdown-profile"
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      handleNavClick('profile');
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-white dark:hover:bg-[#18181C] flex items-center gap-2 text-[#111111] dark:text-slate-200 transition font-medium cursor-pointer"
+                  >
+                    <User className="h-3.5 w-3.5 text-[#2E0A24] dark:text-[#D48324]" />
+                    <span>Candidate Profile</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="nav-user-dropdown-settings"
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      handleNavClick('settings');
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-white dark:hover:bg-[#18181C] flex items-center gap-2 text-[#111111] dark:text-slate-200 transition font-medium cursor-pointer"
+                  >
+                    <Settings className="h-3.5 w-3.5 text-[#2E0A24] dark:text-[#D48324]" />
+                    <span>Settings & Preferences</span>
                   </button>
 
                   <div className="my-1 border-t border-[#E5DFD5] dark:border-[#232328]" />
@@ -383,17 +416,39 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="text-[10px] text-[#7A7875] truncate">{user.email}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    onOpenHistory?.();
+                    handleNavClick('dashboard');
                   }}
-                  className="flex-1 py-2 px-3 bg-[#FAF8F5] dark:bg-[#18181C] border border-[#E5DFD5] dark:border-[#27272E] rounded-xl text-xs font-semibold text-[#111111] dark:text-[#F4F4F5] flex items-center justify-center gap-1.5 transition hover:bg-white cursor-pointer"
+                  className="py-2 px-3 bg-[#FAF8F5] dark:bg-[#18181C] border border-[#E5DFD5] dark:border-[#27272E] rounded-xl text-xs font-semibold text-[#111111] dark:text-[#F4F4F5] flex items-center justify-center gap-1.5 transition hover:bg-white cursor-pointer"
                 >
                   <History className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#F59E0B]" />
-                  <span>Dossier</span>
+                  <span>Dashboard</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleNavClick('profile');
+                  }}
+                  className="py-2 px-3 bg-[#FAF8F5] dark:bg-[#18181C] border border-[#E5DFD5] dark:border-[#27272E] rounded-xl text-xs font-semibold text-[#111111] dark:text-[#F4F4F5] flex items-center justify-center gap-1.5 transition hover:bg-white cursor-pointer"
+                >
+                  <User className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#F59E0B]" />
+                  <span>Profile</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleNavClick('settings');
+                  }}
+                  className="py-2 px-3 bg-[#FAF8F5] dark:bg-[#18181C] border border-[#E5DFD5] dark:border-[#27272E] rounded-xl text-xs font-semibold text-[#111111] dark:text-[#F4F4F5] flex items-center justify-center gap-1.5 transition hover:bg-white cursor-pointer"
+                >
+                  <Settings className="h-3.5 w-3.5 text-[#3A0F34] dark:text-[#F59E0B]" />
+                  <span>Settings</span>
                 </button>
                 <button
                   type="button"
@@ -404,7 +459,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="py-2 px-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center justify-center gap-1 transition cursor-pointer"
                 >
                   <LogOut className="h-3.5 w-3.5" />
-                  <span>Logout</span>
+                  <span>Sign Out</span>
                 </button>
               </div>
             </div>

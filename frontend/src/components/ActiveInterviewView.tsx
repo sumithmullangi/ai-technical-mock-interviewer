@@ -4,40 +4,26 @@ import {
   CheckCircle2,
   Copy,
   Check,
-  ArrowLeft,
-  Sparkles,
   Terminal,
-  Layers,
   Send,
   Loader2,
   AlertCircle,
   AlertTriangle,
   MessageSquare,
-  Bot,
-  BarChart3,
-  CornerDownRight,
   RefreshCw,
   ArrowRight,
-  Trophy,
   ChevronDown,
   ChevronUp,
   Award,
   Mic,
-  MicOff,
-  Radio,
   Volume2,
-  User,
   Clock,
-  Quote,
-  Target,
-  Printer,
   Share2,
   Settings,
   Download,
   Home,
   Briefcase,
   FileText,
-  Play,
   Shield,
   RotateCcw,
   Sun,
@@ -194,12 +180,19 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
   const [isEarlyExitModalOpen, setIsEarlyExitModalOpen] = useState(false);
   const [isExitingEarly, setIsExitingEarly] = useState(false);
 
+  // In-Interview Settings Modal
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
   // Voice Session Reference
   const voiceSessionRef = useRef<WebSpeechVoiceSession | null>(null);
   const transcriptBottomRef = useRef<HTMLDivElement | null>(null);
   const isSubmittingRef = useRef<boolean>(false);
   const handleVoiceAutoSubmitRef = useRef<(text: string) => void>(() => {});
   const presentedQuestionRef = useRef<number | null>(null);
+  const currentFollowUpRef = useRef<FollowUpQuestionData | null>(currentFollowUp);
+  useEffect(() => {
+    currentFollowUpRef.current = currentFollowUp;
+  }, [currentFollowUp]);
 
   // Auto-scroll transcript
   const scrollToBottom = useCallback(() => {
@@ -387,8 +380,18 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
           onTranscriptUpdate: (transcripts) => {
             const candItems = transcripts.filter((t) => t.speaker === 'candidate');
             if (candItems.length > 0) {
-              const latestCand = candItems[candItems.length - 1];
-              setCurrentSpokenText(latestCand.text);
+              const fullSpeech = candItems.map((c) => c.text.trim()).filter(Boolean).join(' ');
+              setCurrentSpokenText(fullSpeech);
+              if (currentFollowUpRef.current) {
+                setFollowUpAnswerText(fullSpeech);
+              } else {
+                setCandidateAnswerText(fullSpeech);
+              }
+            }
+          },
+          onCandidateInterim: (interim) => {
+            if (interim) {
+              setStatusMessage(`Listening: "${interim.slice(-50)}"...`);
             }
           },
           onError: (err) => {
@@ -404,10 +407,12 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
             // Auto silence detection: candidate completed substantive thoughts and paused
             if (
               interviewStateRef.current === 'LISTENING' &&
-              !isSubmittingRef.current &&
-              completedText.trim().length >= 15
+              !isSubmittingRef.current
             ) {
-              handleVoiceAutoSubmitRef.current(completedText.trim());
+              const accumulated = sessionInstance.getCandidateAccumulatedSpeech() || completedText;
+              if (accumulated.trim().length >= 20) {
+                handleVoiceAutoSubmitRef.current(accumulated.trim());
+              }
             }
           },
           onInterviewerSpeechEnd: () => {
@@ -1290,7 +1295,6 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
   // ACTIVE IN-PROGRESS INTERVIEW VIEW (Screen 5 Reference Layout)
   // -------------------------------------------------------------
   const starterCode = q?.starter_code || q?.starterCode;
-  const expectedConcepts = q?.expected_concepts || q?.expectedConcepts || [];
   const isBusy = ['SAVING_ANSWER', 'EVALUATING_ANSWER', 'PREPARING_NEXT_QUESTION', 'SESSION_COMPLETING'].includes(
     interviewState
   );
@@ -1410,6 +1414,16 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
           />
         </div>
 
+        {/* Status Message Indicator */}
+        {statusMessage && !errorMessage && (
+          <div className="max-w-5xl mx-auto mt-3 px-4 sm:px-8 w-full">
+            <div className="py-1 px-3 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-[11px] font-mono text-[#F59E0B] inline-flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#F59E0B] animate-pulse" />
+              <span>{statusMessage}</span>
+            </div>
+          </div>
+        )}
+
         {/* Global Error Banner */}
         {errorMessage && (
           <div role="alert" className="max-w-5xl mx-auto mt-4 px-4 sm:px-8 w-full">
@@ -1472,15 +1486,15 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
 
               {/* Guidance Chips (Reference Screen 5) */}
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#E5DFD5] dark:border-[#232328]">
-                <span className="px-3 py-1 rounded-full text-[11px] font-sans bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#666666] dark:text-[#A1A1AA] border border-[#E5DFD5] dark:border-[#2A2A30]">
-                  Follow-up possible
-                </span>
-                <span className="px-3 py-1 rounded-full text-[11px] font-sans bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#666666] dark:text-[#A1A1AA] border border-[#E5DFD5] dark:border-[#2A2A30]">
-                  Think step by step
-                </span>
-                <span className="px-3 py-1 rounded-full text-[11px] font-sans bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#666666] dark:text-[#A1A1AA] border border-[#E5DFD5] dark:border-[#2A2A30]">
-                  Share examples
-                </span>
+                {guidanceChips.map((chip, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 rounded-full text-[11px] font-sans bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#666666] dark:text-[#A1A1AA] border border-[#E5DFD5] dark:border-[#2A2A30] inline-flex items-center gap-1"
+                  >
+                    <span>{chip.icon}</span>
+                    <span>{chip.label}</span>
+                  </span>
+                ))}
               </div>
 
               {/* Starter Code Block (if provided) */}
@@ -1604,6 +1618,19 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
 
           {/* Bottom Answer Input & Recording Workspace (Reference Screen 5) */}
           <div id="unified-input-workspace" className="space-y-3">
+            {/* Live Audio Capture Transcript Banner (visible in voice mode) */}
+            {activeMode === 'voice' && (
+              <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#F59E0B]/10 border border-[#F59E0B]/25 text-xs text-[#111111] dark:text-[#F4F4F5] animate-fadeIn transition-colors">
+                <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                <span className="font-mono font-bold uppercase tracking-wider text-[10px] text-[#F59E0B] shrink-0">
+                  Microphone Capture:
+                </span>
+                <span className="truncate text-xs font-sans italic text-[#555555] dark:text-[#A1A1AA]">
+                  {currentSpokenText || 'Listening... Speak your technical explanation aloud'}
+                </span>
+              </div>
+            )}
+
             {/* Input Bar: Type your answer here... + Send airplane icon */}
             <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-2 flex items-center gap-2 shadow-xs transition-colors">
               <input
@@ -1629,7 +1656,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                     }
                   }
                 }}
-                placeholder="Type your answer here..."
+                placeholder={activeMode === 'voice' ? "Speaking into microphone... or edit your transcribed response here" : "Type your answer here..."}
                 className="flex-1 bg-transparent border-0 px-3 py-2 text-xs sm:text-sm font-sans text-[#111111] dark:text-white placeholder-[#888888] dark:placeholder-[#71717A] focus:outline-none"
               />
 
@@ -1670,7 +1697,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                   } ${!hasVoiceSupport ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <Mic className="h-3.5 w-3.5 text-[#F59E0B]" />
-                  <span>Mic</span>
+                  <span>{activeMode === 'voice' ? 'Voice Active' : 'Switch to Voice'}</span>
                 </button>
 
                 {/* Hidden Text Mode Toggle Button for Test Contract */}
@@ -1690,16 +1717,32 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 id="voice-done-speaking-btn"
                 disabled={isBusy}
                 onClick={() => {
-                  if (activeMode === 'voice' && currentSpokenText.trim()) {
-                    if (currentFollowUp) {
-                      handleFollowUpSubmitCore(currentSpokenText, true);
+                  const voiceSpeech = voiceSessionRef.current?.getCandidateAccumulatedSpeech() || currentSpokenText;
+                  const effectiveText = (
+                    voiceSpeech.trim() ||
+                    (currentFollowUp ? followUpAnswerText.trim() : candidateAnswerText.trim())
+                  ).trim();
+
+                  if (activeMode === 'voice') {
+                    if (effectiveText) {
+                      if (currentFollowUp) {
+                        handleFollowUpSubmitCore(effectiveText, true);
+                      } else {
+                        handleSubmitAnswerCore(effectiveText, true);
+                      }
                     } else {
-                      handleSubmitAnswerCore(currentSpokenText, true);
+                      setErrorMessage('No speech captured yet. Please speak clearly into your microphone, or type your answer above.');
                     }
-                  } else if (candidateAnswerText.trim()) {
-                    handleSubmitAnswerCore(candidateAnswerText, false);
                   } else {
-                    handleToggleMode('voice');
+                    if (effectiveText) {
+                      if (currentFollowUp) {
+                        handleFollowUpSubmitCore(effectiveText, false);
+                      } else {
+                        handleSubmitAnswerCore(effectiveText, false);
+                      }
+                    } else {
+                      setErrorMessage('Answer cannot be empty. Please enter your technical explanation.');
+                    }
                   }
                 }}
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] text-xs sm:text-sm font-sans font-bold shadow-md shadow-[#F59E0B]/20 transition-all cursor-pointer"
@@ -1712,7 +1755,7 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 ) : (
                   <>
                     <span className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse" />
-                    <span>{isListening ? 'Done Speaking' : 'Start Recording'}</span>
+                    <span>{isListening ? 'Done Speaking' : 'Submit Voice Answer'}</span>
                   </>
                 )}
               </button>
@@ -1720,7 +1763,8 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
               {/* Right: Settings Button */}
               <button
                 type="button"
-                onClick={() => handleToggleMode(activeMode === 'voice' ? 'text' : 'voice')}
+                id="in-interview-settings-btn"
+                onClick={() => setIsSettingsModalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-white dark:bg-[#141417] text-xs font-sans font-medium text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white transition cursor-pointer"
               >
                 <Settings className="h-3.5 w-3.5 text-[#F59E0B]" />
@@ -1782,6 +1826,95 @@ export const ActiveInterviewView: React.FC<ActiveInterviewViewProps> = ({
                 className="w-full py-2 text-xs font-sans text-[#777777] dark:text-[#71717A] hover:text-[#111111] dark:hover:text-[#A1A1AA] hover:underline cursor-pointer"
               >
                 Continue Interview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-Interview Quick Settings Modal */}
+      {isSettingsModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn"
+        >
+          <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-[#141417] border border-[#E5DFD5] dark:border-[#232328] shadow-xl space-y-5 transition-colors">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5DFD5] dark:border-[#232328]">
+              <div className="flex items-center gap-2.5 text-[#F59E0B]">
+                <Settings className="h-5 w-5 text-[#F59E0B]" />
+                <h3 className="font-serif text-base font-bold text-[#111111] dark:text-white">
+                  Interview Settings
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="text-xs text-[#777777] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-sans">
+              {/* Interaction Mode */}
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FAF8F5] dark:bg-[#1C1C21] border border-[#E5DFD5] dark:border-[#2A2A30]">
+                <div>
+                  <div className="font-semibold text-[#111111] dark:text-white">Interaction Mode</div>
+                  <div className="text-[11px] text-[#555555] dark:text-[#A1A1AA]">
+                    {activeMode === 'voice' ? 'Microphone & Speech Recognition' : 'Keyboard Typing'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={!hasVoiceSupport && activeMode === 'text'}
+                  onClick={() => handleToggleMode(activeMode === 'voice' ? 'text' : 'voice')}
+                  className="px-3 py-1.5 rounded-full border border-[#F59E0B] text-[#F59E0B] font-bold text-xs hover:bg-[#F59E0B]/10 transition cursor-pointer"
+                >
+                  Switch to {activeMode === 'voice' ? 'Text' : 'Voice'}
+                </button>
+              </div>
+
+              {/* Theme Toggle */}
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FAF8F5] dark:bg-[#1C1C21] border border-[#E5DFD5] dark:border-[#2A2A30]">
+                <div>
+                  <div className="font-semibold text-[#111111] dark:text-white">Visual Theme</div>
+                  <div className="text-[11px] text-[#555555] dark:text-[#A1A1AA]">
+                    Currently: {theme === 'dark' ? 'Obsidian Dark' : 'Warm Light'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onToggleTheme?.()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] text-xs font-medium text-[#111111] dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer"
+                >
+                  {theme === 'dark' ? <Sun className="h-3.5 w-3.5 text-[#F59E0B]" /> : <Moon className="h-3.5 w-3.5 text-[#F59E0B]" />}
+                  <span>Toggle Theme</span>
+                </button>
+              </div>
+
+              {/* Full Settings Navigation Link */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSettingsModalOpen(false);
+                    onNavigateTab?.('settings');
+                  }}
+                  className="w-full py-2.5 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white font-medium text-xs transition cursor-pointer"
+                >
+                  Open Full Application Settings &rarr;
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="w-full py-2.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] font-bold text-xs transition cursor-pointer shadow-md shadow-[#F59E0B]/20"
+              >
+                Close Settings
               </button>
             </div>
           </div>

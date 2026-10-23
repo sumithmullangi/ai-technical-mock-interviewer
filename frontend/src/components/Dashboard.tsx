@@ -13,10 +13,8 @@ import {
   Loader2,
   AlertCircle,
   Sparkles,
-  ChevronRight,
   Sun,
   Moon,
-  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { UserInterviewHistoryItem } from '../types/auth';
@@ -39,7 +37,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   theme = 'light',
   onToggleTheme,
 }) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [history, setHistory] = useState<UserInterviewHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +86,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     (item) => item.status === 'completed'
   ).length;
 
+  // Real average score from completed sessions with scores
+  const scoredItems = history.filter(
+    (item) => typeof item.score === 'number' && item.score !== null
+  );
+  const realAverageScore = scoredItems.length > 0
+    ? Math.round(scoredItems.reduce((acc, curr) => acc + (curr.score || 0), 0) / scoredItems.length)
+    : null;
+
   // Interviews conducted in the last 7 days
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -97,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return new Date(dStr) >= oneWeekAgo;
   }).length;
 
-  const displayName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Sumith';
+  const displayName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Candidate';
 
   return (
     <div className="flex-1 flex flex-col md:flex-row min-h-[calc(100dvh-3.5rem)] bg-[#F8F6F1] dark:bg-[#09090B] text-[#111111] dark:text-[#F4F4F5] transition-colors">
@@ -115,6 +121,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <nav className="p-4 space-y-1.5 font-sans text-xs" aria-label="Dashboard Sidebar">
             <button
               type="button"
+              id="sidebar-nav-home"
               onClick={() => {
                 setActiveNav('home');
                 onNavigateTab('landing');
@@ -131,6 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <button
               type="button"
+              id="sidebar-nav-my-interviews"
               onClick={() => setActiveNav('my-interviews')}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all font-medium cursor-pointer ${
                 activeNav === 'my-interviews'
@@ -146,6 +154,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <button
               type="button"
+              id="sidebar-nav-practice"
               onClick={() => {
                 setActiveNav('practice');
                 onNewInterview();
@@ -162,9 +171,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <button
               type="button"
+              id="sidebar-nav-reports"
               onClick={() => {
                 setActiveNav('reports');
-                onNavigateTab('sample-report');
+                const completedSess = history.find((h) => h.status === 'completed');
+                if (completedSess) {
+                  onResumeSession(completedSess.session_id);
+                } else {
+                  onNavigateTab('sample-report');
+                }
               }}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all font-medium cursor-pointer ${
                 activeNav === 'reports'
@@ -178,7 +193,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <button
               type="button"
-              onClick={() => setActiveNav('profile')}
+              id="sidebar-nav-profile"
+              onClick={() => {
+                setActiveNav('profile');
+                onNavigateTab('profile');
+              }}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all font-medium cursor-pointer"
             >
               <Award className="h-4 w-4" />
@@ -187,7 +206,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <button
               type="button"
-              onClick={() => setActiveNav('settings')}
+              id="sidebar-nav-settings"
+              onClick={() => {
+                setActiveNav('settings');
+                onNavigateTab('settings');
+              }}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#555555] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all font-medium cursor-pointer"
             >
               <Sparkles className="h-4 w-4 text-[#F59E0B]" />
@@ -196,21 +219,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </nav>
         </div>
 
-        {/* Sidebar Bottom Card: Keep going! 3 interviews this week */}
+        {/* Sidebar Bottom Card: Keep going! */}
         <div className="p-4 border-t border-[#E5DFD5] dark:border-[#1E1E24] space-y-3">
           <div className="rounded-2xl bg-[#FAF8F5] dark:bg-[#141417] p-3.5 text-[#111111] dark:text-white border border-[#E5DFD5] dark:border-[#232328]">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-[#111111] dark:text-white">Keep going!</span>
+              <span className="text-[11px] font-semibold text-[#111111] dark:text-white">
+                {thisWeekInterviews > 0 ? 'Keep going!' : 'Ready to begin?'}
+              </span>
             </div>
-            <p className="text-[10px] text-[#555555] dark:text-[#A1A1AA] mt-0.5">3 interviews this week</p>
-            {/* Visual mini glowing bar chart in Amber */}
+            <p className="text-[10px] text-[#555555] dark:text-[#A1A1AA] mt-0.5">
+              {thisWeekInterviews === 1
+                ? '1 interview this week'
+                : `${thisWeekInterviews} interviews this week`}
+            </p>
+            {/* Visual mini bar indicator */}
             <div className="mt-3 flex items-end gap-1.5 h-8">
               <div className="flex-1 bg-[#F59E0B]/30 rounded-sm h-3"></div>
-              <div className="flex-1 bg-[#F59E0B] rounded-sm h-7"></div>
+              <div className="flex-1 bg-[#F59E0B] rounded-sm h-5"></div>
               <div className="flex-1 bg-[#F59E0B]/30 rounded-sm h-4"></div>
               <div className="flex-1 bg-[#F59E0B] rounded-sm h-6"></div>
               <div className="flex-1 bg-[#F59E0B]/30 rounded-sm h-2"></div>
-              <div className="flex-1 bg-[#F59E0B] rounded-sm h-5"></div>
+              <div className="flex-1 bg-[#F59E0B] rounded-sm h-7"></div>
             </div>
           </div>
         </div>
@@ -274,7 +303,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-3xl font-bold font-sans text-[#111111] dark:text-white">
-                {totalInterviews > 0 ? totalInterviews : 5}
+                {totalInterviews}
               </span>
             </div>
           </div>
@@ -291,7 +320,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-3xl font-bold font-sans text-[#111111] dark:text-white">
-                {completedInterviews > 0 ? completedInterviews : 4}
+                {completedInterviews}
               </span>
             </div>
           </div>
@@ -308,7 +337,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-3xl font-bold font-sans text-[#111111] dark:text-white">
-                82
+                {realAverageScore !== null ? realAverageScore : '—'}
               </span>
             </div>
           </div>
@@ -325,13 +354,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-3xl font-bold font-sans text-[#111111] dark:text-white">
-                {thisWeekInterviews > 0 ? thisWeekInterviews : 3}
+                {thisWeekInterviews}
               </span>
             </div>
           </div>
         </section>
 
-        {/* 4. Recommended for You Section (Reference Screen 3) */}
+        {/* 4. Pricing & Community Plan Banner (Honest & Informational) */}
+        <section className="mt-8 rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-gradient-to-r from-amber-500/10 via-[#FAF8F5] to-white dark:from-[#F59E0B]/10 dark:via-[#141417] dark:to-[#18181C] p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F59E0B]/20 text-[#B45309] dark:text-[#F59E0B] text-[11px] font-sans font-bold uppercase tracking-wider">
+                Active Plan: Community Edition
+              </span>
+              <span className="text-xs font-sans font-bold text-emerald-600 dark:text-emerald-400">
+                100% Free Forever
+              </span>
+            </div>
+            <p className="text-xs text-[#555555] dark:text-[#A1A1AA] font-sans">
+              Unlimited mock sessions, speech synthesis, Gemini 2.5 Flash + OpenRouter fallback, and 4D evaluation dossiers. No credit card or subscription required.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onNewInterview}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#3A0F34] dark:bg-[#F59E0B] hover:bg-[#4E1446] dark:hover:bg-[#D97706] text-white dark:text-[#09090B] px-5 py-2 text-xs font-sans font-bold shadow-xs transition cursor-pointer shrink-0"
+          >
+            <span>Practice Now</span>
+            <ArrowRight className="h-3.5 w-3.5 text-[#F59E0B] dark:text-[#09090B]" />
+          </button>
+        </section>
+
+        {/* 5. Recommended for You Section (Reference Screen 3) */}
         <section className="mt-10" aria-label="Recommended Tracks">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-xl font-bold text-[#111111] dark:text-white">
@@ -357,10 +412,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#7A7875] dark:text-[#A1A1AA] text-[11px] font-sans font-medium mt-1">
                   Most popular
                 </span>
+                <p className="mt-1 text-xs text-[#555555] dark:text-[#A1A1AA] font-sans">
+                  Distributed systems, caching & concurrency
+                </p>
               </div>
               <button
                 type="button"
-                onClick={onNewInterview}
+                onClick={() => {
+                  try {
+                    const saved = localStorage.getItem('mockinterview_preferences') || '{}';
+                    const parsed = JSON.parse(saved);
+                    parsed.preferred_role = 'Backend Engineer (Distributed Systems)';
+                    localStorage.setItem('mockinterview_preferences', JSON.stringify(parsed));
+                  } catch {}
+                  onNewInterview();
+                }}
                 className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] px-4 py-2 text-xs font-sans font-bold transition cursor-pointer w-fit shadow-xs"
               >
                 <span>Start</span>
@@ -372,15 +438,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col justify-between">
               <div>
                 <h3 className="font-sans text-base font-bold text-[#111111] dark:text-white">
-                  Data Analyst
+                  Data Pipeline Engineer
                 </h3>
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#7A7875] dark:text-[#A1A1AA] text-[11px] font-sans font-medium mt-1">
+                  High demand
+                </span>
                 <p className="mt-1 text-xs text-[#555555] dark:text-[#A1A1AA] font-sans">
-                  Build your data skills
+                  Stream processing & backpressure control
                 </p>
               </div>
               <button
                 type="button"
-                onClick={onNewInterview}
+                onClick={() => {
+                  try {
+                    const saved = localStorage.getItem('mockinterview_preferences') || '{}';
+                    const parsed = JSON.parse(saved);
+                    parsed.preferred_role = 'Data & Analytics Pipeline Engineer';
+                    localStorage.setItem('mockinterview_preferences', JSON.stringify(parsed));
+                  } catch {}
+                  onNewInterview();
+                }}
                 className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] px-4 py-2 text-xs font-sans font-bold transition cursor-pointer w-fit shadow-xs"
               >
                 <span>Start</span>
@@ -388,19 +465,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </button>
             </div>
 
-            {/* Recommendation 3: Product Manager */}
+            {/* Recommendation 3: Full-Stack Web Architect */}
             <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col justify-between">
               <div>
                 <h3 className="font-sans text-base font-bold text-[#111111] dark:text-white">
-                  Product Manager
+                  Full-Stack Web Architect
                 </h3>
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#7A7875] dark:text-[#A1A1AA] text-[11px] font-sans font-medium mt-1">
+                  Architecture & APIs
+                </span>
                 <p className="mt-1 text-xs text-[#555555] dark:text-[#A1A1AA] font-sans">
-                  Practice behavioral & case
+                  Client-server sync & protocols
                 </p>
               </div>
               <button
                 type="button"
-                onClick={onNewInterview}
+                onClick={() => {
+                  try {
+                    const saved = localStorage.getItem('mockinterview_preferences') || '{}';
+                    const parsed = JSON.parse(saved);
+                    parsed.preferred_role = 'Full-Stack Web Architect';
+                    localStorage.setItem('mockinterview_preferences', JSON.stringify(parsed));
+                  } catch {}
+                  onNewInterview();
+                }}
                 className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] px-4 py-2 text-xs font-sans font-bold transition cursor-pointer w-fit shadow-xs"
               >
                 <span>Start</span>
@@ -410,7 +498,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </section>
 
-        {/* 5. Recent Interviews Section (Reference Panel 3) */}
+        {/* 6. Recent Interviews Section */}
         <section className="mt-10" aria-label="Recent Interviews">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-xl font-bold text-[#111111] dark:text-white">
@@ -430,7 +518,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          {/* List of Recent Interviews */}
+          {/* Error Message */}
           {error && (
             <div className="p-4 rounded-2xl border border-rose-300 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 text-xs font-mono flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />
@@ -439,7 +527,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           {!isAuthenticated ? (
-            <div className="rounded-2xl border border-dashed border-[#E5DFD5] dark:border-[#232328] p-8 text-center bg-white/70 dark:bg-[#141417]/60">
+            <div className="rounded-3xl border border-dashed border-[#E5DFD5] dark:border-[#232328] p-8 text-center bg-white/70 dark:bg-[#141417]/60">
               <p className="text-sm font-sans text-[#555555] dark:text-[#A1A1AA]">
                 Sign in to your candidate account to save session history and review performance reports.
               </p>
@@ -453,71 +541,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </button>
             </div>
           ) : history.length === 0 ? (
-            /* Reference Screen 3 Default Recent Interviews Cards */
-            <div className="space-y-3">
-              <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
-                <div className="flex items-center gap-4">
-                  {/* Icon Box */}
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#F59E0B] font-sans font-bold text-base">
-                    C
-                  </div>
-                  <div>
-                    <h4 className="font-sans text-sm sm:text-base font-bold text-[#111111] dark:text-white">
-                      Software Engineer - Backend
-                    </h4>
-                    <p className="text-xs text-[#555555] dark:text-[#A1A1AA] font-sans mt-0.5">
-                      Oct 21, 2026 · 8 questions · Completed
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 self-end sm:self-center">
-                  {/* Circular Score Badge 85 (Green) */}
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-emerald-500 bg-[#FAF8F5] dark:bg-[#0D0D10] text-emerald-600 dark:text-emerald-400 font-bold text-sm font-sans">
-                    85
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onNavigateTab('sample-report')}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-[#FAF8F5] dark:bg-[#1A1A1E] hover:bg-white dark:hover:bg-[#25252A] px-4 py-2 text-xs font-sans font-medium text-[#111111] dark:text-white shadow-xs transition cursor-pointer"
-                  >
-                    <FileText className="h-3.5 w-3.5 text-[#F59E0B]" />
-                    <span>View Report</span>
-                  </button>
-                </div>
+            /* Clean Empty State for users with no interview records yet */
+            <div className="rounded-3xl border border-dashed border-[#E5DFD5] dark:border-[#232328] p-8 sm:p-12 text-center bg-white/70 dark:bg-[#141417]/60 space-y-3">
+              <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-2xl bg-[#F59E0B]/10 text-[#F59E0B]">
+                <Briefcase className="h-6 w-6" />
               </div>
-
-              <div className="rounded-2xl border border-[#E5DFD5] dark:border-[#232328] bg-white dark:bg-[#141417] p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
-                <div className="flex items-center gap-4">
-                  {/* Icon Box */}
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FAF8F5] dark:bg-[#1C1C21] text-[#F59E0B] font-sans font-bold text-base">
-                    J
-                  </div>
-                  <div>
-                    <h4 className="font-sans text-sm sm:text-base font-bold text-[#111111] dark:text-white">
-                      Frontend Developer
-                    </h4>
-                    <p className="text-xs text-[#555555] dark:text-[#A1A1AA] font-sans mt-0.5">
-                      Oct 18, 2026 · 6 questions · Completed
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 self-end sm:self-center">
-                  {/* Circular Score Badge 78 (Orange) */}
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#F59E0B] bg-[#FAF8F5] dark:bg-[#0D0D10] text-[#F59E0B] font-bold text-sm font-sans">
-                    78
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onNavigateTab('sample-report')}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[#E5DFD5] dark:border-[#2A2A30] bg-[#FAF8F5] dark:bg-[#1A1A1E] hover:bg-white dark:hover:bg-[#25252A] px-4 py-2 text-xs font-sans font-medium text-[#111111] dark:text-white shadow-xs transition cursor-pointer"
-                  >
-                    <FileText className="h-3.5 w-3.5 text-[#F59E0B]" />
-                    <span>View Report</span>
-                  </button>
-                </div>
-              </div>
+              <h4 className="font-serif text-lg font-bold text-[#111111] dark:text-white">
+                No mock interviews recorded yet
+              </h4>
+              <p className="text-xs sm:text-sm text-[#555555] dark:text-[#A1A1AA] font-sans max-w-md mx-auto">
+                Launch your first technical practice session with realistic AI prompts, 4D rubric evaluation, and full dossier synthesis.
+              </p>
+              <button
+                type="button"
+                id="dashboard-empty-start-btn"
+                onClick={onNewInterview}
+                className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#09090B] px-5 py-2.5 text-xs font-sans font-bold shadow-md shadow-[#F59E0B]/20 transition cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5 text-[#09090B]" />
+                <span>Start First Mock Interview</span>
+              </button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -529,11 +572,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       day: 'numeric',
                       year: 'numeric',
                     })
-                  : 'Oct 23, 2026';
+                  : 'Recent';
 
                 const questionCount = item.config?.question_count || item.config?.questionCount || 5;
                 const roleName = item.config?.role || 'Technical Interview';
                 const isCompleted = item.status === 'completed';
+                const hasScore = typeof item.score === 'number' && item.score !== null;
 
                 return (
                   <div
@@ -556,8 +600,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     <div className="flex items-center gap-4 self-end sm:self-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-emerald-500 bg-[#FAF8F5] dark:bg-[#0D0D10] text-emerald-600 dark:text-emerald-400 font-bold text-sm font-sans">
-                        85
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-bold text-sm font-sans ${
+                        hasScore
+                          ? (item.score || 0) >= 80
+                            ? 'border-emerald-500 bg-[#FAF8F5] dark:bg-[#0D0D10] text-emerald-600 dark:text-emerald-400'
+                            : 'border-[#F59E0B] bg-[#FAF8F5] dark:bg-[#0D0D10] text-[#F59E0B]'
+                          : 'border-[#E5DFD5] dark:border-[#2A2A30] bg-[#FAF8F5] dark:bg-[#0D0D10] text-[#7A7875]'
+                      }`}>
+                        {hasScore ? item.score : '—'}
                       </div>
 
                       <button

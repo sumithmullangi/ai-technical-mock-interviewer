@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -170,28 +171,37 @@ async def list_user_interview_history(
     """Retrieves all interview sessions belonging to the authenticated user, ordered newest first."""
     stmt = (
         select(InterviewSessionModel)
+        .options(selectinload(InterviewSessionModel.report))
         .where(InterviewSessionModel.user_id == current_user.id)
         .order_by(InterviewSessionModel.created_at.desc())
     )
     result = await db.execute(stmt)
     sessions = result.scalars().all()
 
-    return [
-        InterviewConfigResponse(
-            status=s.status,
-            session_id=s.id,
-            user_id=s.user_id,
-            config=InterviewConfigCreate(
-                role=s.role,
-                difficulty=SeniorityLevel(s.difficulty),
-                primary_language=CodingLanguage(s.primary_language),
-                question_count=s.question_count,
-            ),
-            message="Interview session retrieved from history.",
-            created_at=s.created_at,
+    response_items: List[InterviewConfigResponse] = []
+    for s in sessions:
+        score_val: Optional[int] = None
+        if s.report and s.report.overall_score is not None:
+            score_val = int(round(s.report.overall_score * 10))
+
+        response_items.append(
+            InterviewConfigResponse(
+                status=s.status,
+                session_id=s.id,
+                user_id=s.user_id,
+                config=InterviewConfigCreate(
+                    role=s.role,
+                    difficulty=SeniorityLevel(s.difficulty),
+                    primary_language=CodingLanguage(s.primary_language),
+                    question_count=s.question_count,
+                ),
+                score=score_val,
+                message="Interview session retrieved from history.",
+                created_at=s.created_at,
+            )
         )
-        for s in sessions
-    ]
+
+    return response_items
 
 
 @router.get(

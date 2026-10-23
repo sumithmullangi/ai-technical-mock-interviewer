@@ -250,6 +250,9 @@ export class WebSpeechVoiceSession {
         'listening',
         isFinal ? 'Listening to candidate...' : 'Listening to candidate (speaking)...'
       );
+      if (interim) {
+        this.callbacks.onCandidateInterim?.(interim);
+      }
       this.upsertCandidateTranscript(activeText, isFinal);
 
       // Schedule meaningful pause & completed thought detection (2.2s silence threshold)
@@ -618,6 +621,14 @@ export class WebSpeechVoiceSession {
       .filter((t) => t.speaker === 'candidate')
       .map((t) => t.text)
       .join('\n\n');
+  }
+
+  public getCandidateAccumulatedSpeech(): string {
+    return this.transcripts
+      .filter((t) => t.speaker === 'candidate')
+      .map((t) => t.text.trim())
+      .filter(Boolean)
+      .join(' ');
   }
 }
 

@@ -5,6 +5,8 @@ import { Dashboard } from './components/Dashboard';
 import { InterviewConsole } from './components/InterviewConsole';
 import { FeatureGrid } from './components/FeatureGrid';
 import { ChallengesView } from './components/ChallengesView';
+import { ProfileView } from './components/ProfileView';
+import { SettingsView } from './components/SettingsView';
 import { InterviewSetupModal } from './components/InterviewSetupModal';
 import { ActiveInterviewView } from './components/ActiveInterviewView';
 import { Footer } from './components/Footer';
@@ -50,22 +52,22 @@ function AppContent() {
     session_id: 'sample-report-backend-oct21',
     status: 'completed',
     mode: 'text',
+    message: 'Viewing completed session evaluation report.',
     started_at: '2026-10-21T10:00:00Z',
     config: {
       role: 'Software Engineer - Backend',
-      difficulty: 'Mid-Level',
+      difficulty: 'Mid',
       primaryLanguage: 'Python',
       questionCount: 8,
       mode: 'text',
     },
     currentQuestion: {
-      question_id: 'q8',
-      questionId: 'q8',
-      title: 'Distributed Systems & Hash Maps',
-      prompt:
+      question_number: 8,
+      topic: 'Distributed Systems & Hash Maps',
+      question_text:
         'Can you explain how a hash map works internally and what makes it efficient? Also, what are some real-world use cases?',
-      category: 'Data Structures',
-      difficulty: 'Mid-Level',
+      difficulty: 'Mid',
+      expected_concepts: ['Hash Functions', 'O(1) amortized lookup', 'Collision resolution', 'Load factor'],
     },
   };
 
@@ -156,6 +158,10 @@ function AppContent() {
         setActiveTab('sample-report');
       } else if (path === '/architecture') {
         setActiveTab('architecture');
+      } else if (path === '/settings' || path === '/preferences') {
+        setActiveTab('settings');
+      } else if (path === '/profile' || path === '/account') {
+        setActiveTab('profile');
       } else if (path === '/' || path === '') {
         setActiveTab('landing');
       }
@@ -274,9 +280,9 @@ function AppContent() {
   useEffect(() => {
     checkHealth();
 
-    // Check for direct anchor hash routing (e.g. #challenges, #rubric, #workflow, #sample-report, #architecture, #console, #landing)
+    // Check for direct anchor hash routing (e.g. #challenges, #rubric, #workflow, #sample-report, #architecture, #console, #landing, #settings, #profile)
     const hash = window.location.hash.replace('#', '');
-    if (['landing', 'console', 'challenges', 'workflow', 'rubric', 'sample-report', 'architecture'].includes(hash)) {
+    if (['landing', 'console', 'challenges', 'workflow', 'rubric', 'sample-report', 'architecture', 'dashboard', 'settings', 'profile'].includes(hash)) {
       setActiveTab(hash as NavTab);
     }
 
@@ -298,6 +304,8 @@ function AppContent() {
       rubric: '/rubric',
       'sample-report': '/sample-report',
       architecture: '/architecture',
+      settings: '/settings',
+      profile: '/profile',
       all: '/all',
     };
     const targetPath = pathMap[tab] || '/';
@@ -332,8 +340,8 @@ function AppContent() {
         </div>
       )}
 
-      {/* Top Navbar with App-First Tabs (only shown on landing page & secondary reference pages) */}
-      {!startedSession && (activeTab === 'landing' || ['workflow', 'rubric', 'architecture', 'challenges'].includes(activeTab)) && (
+      {/* Top Navbar with App-First Tabs (shown on landing page, secondary reference pages, settings, and profile) */}
+      {!startedSession && (activeTab === 'landing' || ['workflow', 'rubric', 'architecture', 'challenges', 'settings', 'profile'].includes(activeTab)) && (
         <Navbar
           health={health}
           activeTab={activeTab}
@@ -440,6 +448,18 @@ function AppContent() {
                 onConfigSaved={(configuredData) => setActiveSession(configuredData)}
                 onSwitchToStudio={() => handleSelectTab('console')}
               />
+            ) : activeTab === 'profile' ? (
+              <ProfileView
+                onNavigateTab={handleSelectTab}
+                onOpenAuth={(mode) => openAuth(mode)}
+                theme={theme}
+              />
+            ) : activeTab === 'settings' ? (
+              <SettingsView
+                onNavigateTab={handleSelectTab}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+              />
             ) : (
               /* Secondary Reference / Documentation Views (Workflow, Rubric, Architecture) */
               <FeatureGrid
@@ -453,7 +473,7 @@ function AppContent() {
       </main>
 
       {/* Global Footer: Rendered on interior secondary documentation views */}
-      {!startedSession && ['workflow', 'rubric', 'architecture', 'challenges'].includes(activeTab) && (
+      {!startedSession && ['workflow', 'rubric', 'architecture', 'challenges', 'settings', 'profile'].includes(activeTab) && (
         <Footer
           onOpenSetup={() => handleSelectTab('console')}
           onReplayIntro={() => setShowIntro(true)}

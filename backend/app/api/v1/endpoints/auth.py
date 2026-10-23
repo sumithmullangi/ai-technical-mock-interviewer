@@ -21,6 +21,7 @@ from app.models.user import (
 )
 from app.schemas.auth import (
     AuthTokenResponse,
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     MessageResponse,
@@ -28,6 +29,7 @@ from app.schemas.auth import (
     UserLoginRequest,
     UserResponse,
     UserSignupRequest,
+    UserUpdateRequest,
 )
 
 router = APIRouter()
@@ -249,6 +251,75 @@ async def get_me(
 ) -> UserResponse:
     """Retrieve profile of the currently authenticated user."""
     return UserResponse.model_validate(current_user)
+
+
+@router.patch(
+    "/me",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update authenticated user profile and preferences",
+)
+async def update_me(
+    update_data: UserUpdateRequest,
+    current_user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
+    """Safely update candidate full name, target role, experience level, and preferences."""
+    if update_data.full_name is not None:
+        current_user.full_name = update_data.full_name
+    if update_data.target_role is not None:
+        current_user.target_role = update_data.target_role
+    if update_data.experience_level is not None:
+        current_user.experience_level = update_data.experience_level
+    if update_data.preferences is not None:
+        existing_prefs = dict(current_user.preferences or {})
+        existing_prefs.update(update_data.preferences)
+        current_user.preferences = existing_prefs
+
+    current_user.updated_at = datetime.now(timezone.utc)
+    try:
+        await db.commit()
+        await db.refresh(current_user)
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update profile: {type(exc).__name__}",
+        )
+
+    return UserResponse.model_validate(current_user)
+
+
+@router.post(
+    "/change-password",
+    response_model=MessageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Change password for authenticated user",
+)
+async def change_password(
+    password_data: ChangePasswordRequest,
+    current_user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    """Verify current password and set new Argon2id password hash for authenticated user."""
+    if not verify_password(password_data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+
+    current_user.hashed_password = hash_password(password_data.new_password)
+    current_user.updated_at = datetime.now(timezone.utc)
+    try:
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update password: {type(exc).__name__}",
+        )
+
+    return MessageResponse(message="Password changed successfully.", success=True)
 
 
 @router.post(

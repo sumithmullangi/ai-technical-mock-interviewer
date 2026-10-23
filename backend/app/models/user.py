@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     String,
     Text,
+    JSON,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
@@ -53,6 +54,22 @@ class UserModel(Base):
         default=False,
         nullable=False,
         comment="Whether the account email is verified",
+    )
+    target_role: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="Preferred professional role / job track",
+    )
+    experience_level: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True,
+        comment="Candidate experience level (Junior, Mid, Senior, Staff)",
+    )
+    preferences: Mapped[Optional[dict]] = mapped_column(
+        JSON,
+        nullable=True,
+        server_default="{}",
+        comment="User application preferences (theme, default_mode, etc.)",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

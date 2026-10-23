@@ -7,7 +7,6 @@ import {
   Loader2,
   Mic,
   MessageSquare,
-  Sparkles,
   ChevronDown,
   Layers,
   Cpu,

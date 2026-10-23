@@ -868,6 +868,10 @@ class InterviewConfigResponse(BaseModel):
         default=None,
         description="Owner user ID if associated with a candidate account",
     )
+    score: Optional[int] = Field(
+        default=None,
+        description="Calculated overall score (0-100) if completed",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when configuration was processed",
